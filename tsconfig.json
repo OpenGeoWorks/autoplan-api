@@ -11,9 +11,9 @@
             "@/*": ["*"],
             "@domain/*": ["domain/*"],
             "@infra/*": ["infrastructure/*"],
-            "@application/*": ["application/*"],
-            "@main/*": ["main/*"],
-            "@utils/*": ["utils/*"]
+            "@use-cases/*": ["use-cases/*"],
+            "@adapters/*": ["adapters/*"],
+            "@main/*": ["main/*"]
         },
         "rootDirs": ["src"],
         "sourceMap": true,
