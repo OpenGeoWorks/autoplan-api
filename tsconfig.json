@@ -13,7 +13,8 @@
             "@infra/*": ["infrastructure/*"],
             "@use-cases/*": ["use-cases/*"],
             "@adapters/*": ["adapters/*"],
-            "@main/*": ["main/*"]
+            "@main/*": ["main/*"],
+            "@utils/*": ["utils/*"],
         },
         "rootDirs": ["src"],
         "sourceMap": true,

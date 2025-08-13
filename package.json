@@ -57,6 +57,7 @@
     "@use-cases": "dist/use-cases",
     "@infra": "dist/infrastructure",
     "@main": "dist/main",
-    "@adapters": "dist/adapters"
+    "@adapters": "dist/adapters",
+    "@utils": "dist/utils"
   }
 }
