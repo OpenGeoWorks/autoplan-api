@@ -5,6 +5,7 @@ import cors from 'cors';
 import authRoutes from '@main/routes/auth-routes';
 import userRoutes from '@main/routes/user-routes';
 import projectRoutes from '@main/routes/project-routes';
+import traverseRoutes from '@main/routes/traverse-routes';
 
 export class App {
     private readonly app: Express;
@@ -72,6 +73,16 @@ export class App {
                 this.logger,
                 this.container.resolve('AuthController'),
                 this.container.resolve('ProjectController'),
+            ),
+        );
+
+        // Traverse Routes
+        apiRouter.use(
+            '/traverse',
+            traverseRoutes(
+                this.logger,
+                this.container.resolve('AuthController'),
+                this.container.resolve('TraverseController'),
             ),
         );
 

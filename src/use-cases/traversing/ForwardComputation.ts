@@ -1,5 +1,5 @@
 import { Coordinate, CoordinateProps } from '@domain/entities/Coordinate';
-import { TraverseLeg } from '@domain/entities/TraverseLeg';
+import { TraverseLeg, TraverseLegProps } from '@domain/entities/TraverseLeg';
 import { Logger } from '@domain/types/Common';
 import BadRequestError from '@domain/errors/BadRequestError';
 import { Bearing } from '@domain/entities/Bearing';
@@ -42,7 +42,7 @@ export class ForwardComputation {
 
         // Initialize the starting point
         let start: CoordinateProps = data.start;
-        const computedLegs: TraverseLeg[] = [];
+        const computedLegs: TraverseLegProps[] = [];
         let totalDistance = 0;
 
         for (let i = 0; i < data.legs.length; i++) {
@@ -62,7 +62,7 @@ export class ForwardComputation {
             };
 
             // create a new TraverseLeg
-            const traverseLeg: TraverseLeg = {
+            const traverseLeg: TraverseLegProps = {
                 from: start,
                 to: newCoordinate,
                 distance: leg.distance,
@@ -122,16 +122,22 @@ export class ForwardComputation {
         const traverse = {
             total_distance: totalDistance,
             bounding_box: {
-                min_northing: Math.min(...northingCoordinates),
-                max_northing: Math.max(...northingCoordinates),
-                min_easting: Math.min(...eastingCoordinates),
-                max_easting: Math.max(...eastingCoordinates),
+                min_northing: Math.round(Math.min(...northingCoordinates) * 1000) / 1000,
+                max_northing: Math.round(Math.max(...northingCoordinates) * 1000) / 1000,
+                min_easting: Math.round(Math.min(...eastingCoordinates) * 1000) / 1000,
+                max_easting: Math.round(Math.max(...eastingCoordinates) * 1000) / 1000,
             },
         };
 
         return {
-            start: new Coordinate(start),
-            computed_legs: computedLegs.map(leg => new TraverseLeg(leg)),
+            start: new Coordinate(data.start),
+            computed_legs: computedLegs.map(leg => {
+                const traverse = new TraverseLeg(leg);
+                traverse.round();
+                traverse.from.round();
+                traverse.to.round();
+                return traverse;
+            }),
             traverse,
         };
     }

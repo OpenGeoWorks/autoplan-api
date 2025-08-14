@@ -48,7 +48,7 @@ export class BackComputation {
             const distance = calculateDistance(deltaNorthing, deltaEasting);
             const bearing = Bearing.calculateBearing(from, to);
 
-            const traverseLeg: TraverseLeg = {
+            const traverseLeg: TraverseLegProps = {
                 from: from,
                 to: to,
                 distance: distance,
@@ -67,17 +67,21 @@ export class BackComputation {
         const eastingCoordinates = data.points.map(p => p.easting);
 
         const traverse = {
-            total_distance: totalDistance,
+            total_distance: Math.round(totalDistance * 1000) / 1000,
             bounding_box: {
-                min_northing: Math.min(...northingCoordinates),
-                max_northing: Math.max(...northingCoordinates),
-                min_easting: Math.min(...eastingCoordinates),
-                max_easting: Math.max(...eastingCoordinates),
+                min_northing: Math.round(Math.min(...northingCoordinates) * 1000) / 1000,
+                max_northing: Math.round(Math.max(...northingCoordinates) * 1000) / 1000,
+                min_easting: Math.round(Math.min(...eastingCoordinates) * 1000) / 1000,
+                max_easting: Math.round(Math.max(...eastingCoordinates) * 1000) / 1000,
             },
         };
 
         return {
-            traverse_legs: traverseLegs.map(leg => new TraverseLeg(leg)),
+            traverse_legs: traverseLegs.map(leg => {
+                const traverse = new TraverseLeg(leg);
+                traverse.round();
+                return traverse;
+            }),
             traverse: traverse,
         };
     }

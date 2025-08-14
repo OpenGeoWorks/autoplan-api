@@ -30,6 +30,9 @@ import { ProjectRepositoryInterface } from '@domain/interfaces/repositories/Proj
 import { EditProject } from '@use-cases/project/EditProject';
 import { DeleteProject } from '@use-cases/project/DeleteProject';
 import { ProjectController } from '@adapters/controllers/ProjectController';
+import { BackComputation } from '@use-cases/traversing/BackComputation';
+import { ForwardComputation } from '@use-cases/traversing/ForwardComputation';
+import { TraverseController } from '@adapters/controllers/TraverseController';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -159,6 +162,12 @@ export function setupContainer(): Container {
             container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
         );
     });
+    container.register('BackComputationUseCase', () => {
+        return new BackComputation(container.resolve<Logger>('Logger'));
+    });
+    container.register('ForwardComputationUseCase', () => {
+        return new ForwardComputation(container.resolve<Logger>('Logger'));
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -187,6 +196,14 @@ export function setupContainer(): Container {
             container.resolve('CreateProjectUseCase'),
             container.resolve('EditProjectUseCase'),
             container.resolve('DeleteProjectUseCase'),
+        );
+    });
+    container.register('TraverseController', () => {
+        const logger = container.resolve<Logger>('Logger');
+        return new TraverseController(
+            logger,
+            container.resolve('BackComputationUseCase'),
+            container.resolve('ForwardComputationUseCase'),
         );
     });
 

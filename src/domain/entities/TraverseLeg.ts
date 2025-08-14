@@ -18,12 +18,12 @@ export interface TraverseLegProps {
 }
 
 export class TraverseLeg {
-    public readonly from: CoordinateProps;
-    public readonly to: CoordinateProps;
-    public readonly distance: number;
+    public readonly from: Coordinate;
+    public readonly to: Coordinate;
+    public distance: number;
     public readonly bearing: BearingProps;
-    public readonly delta_northing: number; // change in northing
-    public readonly delta_easting: number; // change in easting
+    public delta_northing: number; // change in northing
+    public delta_easting: number; // change in easting
     public readonly delta_elevation?: number; // change in elevation, optional
     public arithmetic_sum_northing?: number; // optional, arithmetic sum of northing
     public arithmetic_sum_easting?: number; // optional, arithmetic sum of easting
@@ -46,5 +46,38 @@ export class TraverseLeg {
         this.northing_misclosure = props.northing_misclosure;
         this.easting_misclosure = props.easting_misclosure;
         this.elevation_misclosure = props.elevation_misclosure;
+    }
+
+    round() {
+        if (this.distance) {
+            this.distance = Math.round(this.distance * 1000) / 1000;
+        }
+
+        if (this.bearing) {
+            this.bearing.seconds = Math.round(this.bearing.seconds * 1000) / 1000;
+            if (this.bearing.decimal) {
+                this.bearing.decimal = Math.round(this.bearing.decimal * 1000) / 1000;
+            }
+        }
+
+        if (this.delta_northing) {
+            this.delta_northing = Math.round(this.delta_northing * 1000) / 1000;
+        }
+
+        if (this.delta_easting) {
+            this.delta_easting = Math.round(this.delta_easting * 1000) / 1000;
+        }
+
+        if (this.northing_misclosure) {
+            this.northing_misclosure = Math.round(this.northing_misclosure * 100000) / 100000;
+        }
+
+        if (this.easting_misclosure) {
+            this.easting_misclosure = Math.round(this.easting_misclosure * 100000) / 100000;
+        }
+
+        if (this.elevation_misclosure) {
+            this.elevation_misclosure = Math.round(this.elevation_misclosure * 100000) / 100000;
+        }
     }
 }

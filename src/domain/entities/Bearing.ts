@@ -13,8 +13,8 @@ export class Bearing {
 
     constructor(props: BearingProps) {
         this.degrees = props.degrees;
-        this.minutes = props.minutes;
-        this.seconds = props.seconds;
+        this.minutes = props.minutes || 0;
+        this.seconds = props.seconds || 0;
         this.decimal = props.decimal;
     }
 
