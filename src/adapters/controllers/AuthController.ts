@@ -59,22 +59,25 @@ export class AuthController {
 
     async authenticate(
         req: HttpRequest<undefined, undefined, { authorization: string; 'x-api-token': string }>,
-    ): Promise<HttpResponse<AuthenticateResponse | Error>> {
+    ): Promise<HttpResponse<{ user: AuthenticateResponse } | Error>> {
         try {
             const err = AuthValidator.validateAuthenticate({
                 token: req.headers!.authorization,
                 api_token: req.headers!['x-api-token'],
             });
+
             if (err) {
                 return badRequest(err);
             }
 
+            const [, authToken] = req.headers!.authorization.split(' ');
+
             const user = await this.authenticateUseCase.execute({
-                token: req.headers!.authorization,
+                token: authToken,
                 api_token: req.headers!['x-api-token'],
             });
 
-            return success(user);
+            return success({ user });
         } catch (e) {
             return handleError(e);
         }

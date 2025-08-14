@@ -22,6 +22,8 @@ import { EmailServiceInterface } from '@domain/interfaces/services/EmailServiceI
 import { AuthController } from '@adapters/controllers/AuthController';
 import { Hash } from '@domain/interfaces/cryptography/Hash';
 import { JWT } from '@domain/interfaces/cryptography/JWT';
+import { UserController } from '@adapters/controllers/UserController';
+import { SetProfile } from '@use-cases/user/SetProfile';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -77,12 +79,8 @@ export function setupContainer(): Container {
     // Register services
     container.register('Hash', () => new BcryptAdapter(10));
     container.register('Crypt', () => CryptAdapter.getInstance());
-    container.register('JWT', () => () => {
-        return JWTAdapter.getInstance(container.resolve<Crypt>('CryptAdapter'));
-    });
-    container.register('Email', () => {
-        return Resend.getInstance(container.resolve<Logger>('Logger'));
-    });
+    container.register('JWT', () => JWTAdapter.getInstance(container.resolve<Crypt>('Crypt')));
+    container.register('Email', () => Resend.getInstance(container.resolve<Logger>('Logger')));
     container.register('Validator', () => new ValidatorJS());
 
     // Register Repositories
@@ -128,6 +126,12 @@ export function setupContainer(): Container {
             container.resolve<Hash>('Hash'),
         );
     });
+    container.register('SetProfileUseCase', () => {
+        return new SetProfile(
+            container.resolve<Logger>('Logger'),
+            container.resolve<UserRepositoryInterface>('UserRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -138,6 +142,15 @@ export function setupContainer(): Container {
             container.resolve('LogoutUseCase'),
             container.resolve('SendLoginOTPUseCase'),
             container.resolve('AuthenticateUseCase'),
+        );
+    });
+
+    container.register('UserController', () => {
+        const logger = container.resolve<Logger>('Logger');
+        return new UserController(
+            logger,
+            container.resolve('SetProfileUseCase'),
+            container.resolve<UserRepositoryInterface>('UserRepo'),
         );
     });
 

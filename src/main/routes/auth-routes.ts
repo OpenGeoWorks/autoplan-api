@@ -8,9 +8,9 @@ export default (logger: Logger, authController: AuthController): Router => {
     const router = Router();
     const authMiddleware = new AuthMiddleware(logger, authController);
 
-    router.post('/login/otp', expressRouteAdapter(authController.sendLoginOTP));
-    router.post('/login', expressRouteAdapter(authController.login));
-    router.get('/logout', authMiddleware.authenticate, expressRouteAdapter(authController.logout));
+    router.post('/login/otp', expressRouteAdapter(authController.sendLoginOTP.bind(authController)));
+    router.post('/login', expressRouteAdapter(authController.login.bind(authController)));
+    router.get('/logout', authMiddleware.authenticate, expressRouteAdapter(authController.logout.bind(authController)));
 
     return router;
 };

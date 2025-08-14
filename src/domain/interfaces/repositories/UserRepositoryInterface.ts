@@ -5,4 +5,5 @@ export interface UserRepositoryInterface {
     createUser(user: Omit<UserProps, 'id' | 'created_at' | 'updated_at'>): Promise<User>;
     getUserByEmail(email: string, options?: RepoOptions): Promise<User | null>;
     getUserById(id: string, options?: RepoOptions): Promise<User | null>;
+    editUser(id: string, user: Partial<UserProps>, options?: RepoOptions): Promise<User | null>;
 }

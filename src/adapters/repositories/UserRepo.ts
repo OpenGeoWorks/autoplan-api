@@ -22,4 +22,9 @@ export class UserRepo extends BaseRepository<UserDocument> implements UserReposi
         const user = await this.findById(id, options);
         return user ? new User(user) : null;
     }
+
+    async editUser(id: string, data: Partial<UserProps>, options?: RepoOptions): Promise<User | null> {
+        const user = await this.findOneAndUpdate({ id: id }, data, options);
+        return user ? new User(user) : null;
+    }
 }

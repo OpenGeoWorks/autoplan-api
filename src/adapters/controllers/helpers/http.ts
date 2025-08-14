@@ -1,7 +1,7 @@
 import { HttpResponse } from '@adapters/controllers/interfaces/HttpResponse';
 import BadRequestError from '@domain/errors/BadRequestError';
 import NotFoundError from '@domain/errors/NotFoundError';
-import UnAuthorizedError from '@domain/errors/NotFoundError';
+import UnAuthorizedError from '@domain/errors/UnAuthorizedError';
 
 export const success = <T = any>(data: T, message?: string): HttpResponse<T> => ({
     code: 200,

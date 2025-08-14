@@ -25,6 +25,14 @@ const UserSchema: Schema<UserDocument> = new Schema<UserDocument>(
             type: String,
             enum: Object.values(UserRole),
         },
+        profile: {
+            type: Object,
+            default: {},
+        },
+        profile_set: {
+            type: Boolean,
+            default: false,
+        },
         deleted: {
             type: Boolean,
             select: false,

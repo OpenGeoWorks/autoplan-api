@@ -8,6 +8,8 @@ export interface UserProps {
     image: string;
     status?: UserStatus;
     role?: UserRole;
+    profile?: Record<string, any>;
+    profile_set: boolean;
 }
 
 export enum UserStatus {
@@ -30,6 +32,8 @@ export class User {
     public readonly image: string;
     public readonly status?: UserStatus;
     public readonly role?: UserRole;
+    public readonly profile?: Record<string, any>;
+    public readonly profile_set: boolean;
 
     constructor(props: UserProps) {
         this.id = props.id;
@@ -41,6 +45,8 @@ export class User {
         this.image = props.image;
         this.status = props.status || UserStatus.ACTIVE; // Default to ACTIVE if not provided
         this.role = props.role;
+        this.profile = props.profile;
+        this.profile_set = props.profile_set || false; // Default to false if not provided
     }
 
     getFullName(): string {

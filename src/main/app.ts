@@ -3,6 +3,7 @@ import { Logger } from '@domain/types/Common';
 import express, { Express, Request, Response, NextFunction, json } from 'express';
 import cors from 'cors';
 import authRoutes from '@main/routes/auth-routes';
+import userRoutes from '@main/routes/user-routes';
 
 export class App {
     private readonly app: Express;
@@ -56,6 +57,12 @@ export class App {
 
         // Auth routes
         apiRouter.use('/auth', authRoutes(this.logger, this.container.resolve('AuthController')));
+
+        // User routes
+        apiRouter.use(
+            '/user',
+            userRoutes(this.logger, this.container.resolve('AuthController'), this.container.resolve('UserController')),
+        );
 
         // Mount API routes
         this.app.use('/api/v1', apiRouter);

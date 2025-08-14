@@ -3,11 +3,11 @@ import { Crypt } from '@domain/interfaces/cryptography/Crypt';
 import env from '@infra/config/env';
 
 export class CryptAdapter implements Crypt {
-    private static instance: CryptAdapter;
+    private static instance: Crypt;
 
     constructor(private readonly secret: string) {}
 
-    static getInstance(): CryptAdapter {
+    static getInstance(): Crypt {
         if (!CryptAdapter.instance) {
             CryptAdapter.instance = new CryptAdapter(env.encryptionKey);
         }

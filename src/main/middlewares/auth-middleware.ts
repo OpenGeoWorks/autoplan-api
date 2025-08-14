@@ -8,5 +8,5 @@ export class AuthMiddleware {
         private readonly authController: AuthController,
     ) {}
 
-    authenticate = expressMiddlewareAdapter(this.authController.authenticate);
+    authenticate = expressMiddlewareAdapter(this.authController.authenticate.bind(this.authController));
 }

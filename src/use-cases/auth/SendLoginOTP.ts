@@ -38,6 +38,7 @@ export class SendLoginOTP {
                 image: '',
                 status: UserStatus.ACTIVE,
                 role: data.role || UserRole.CUSTOMER,
+                profile_set: false,
             });
         }
 
@@ -45,7 +46,11 @@ export class SendLoginOTP {
         const otp = await this.createOTP.execute({ identifier: user.id, type: `login_otp`, exp: 10 });
 
         // send email
-        await this.emailService.sendEmail({ email: user.email, subject: 'Login OTP', html: otp });
+        await this.emailService.sendEmail({
+            email: user.email,
+            subject: 'Login OTP',
+            html: otp.replace(/(.{3})(.{3})/, '$1-$2'),
+        });
     }
 
     // async sendEmail(admin: { first_name: string; email: string }, otp: string) {

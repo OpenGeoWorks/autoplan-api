@@ -4,14 +4,14 @@ import { Crypt } from '@domain/interfaces/cryptography/Crypt';
 import env from '@infra//config/env';
 
 export class JWTAdapter implements JWT {
-    private static instance: JWTAdapter;
+    private static instance: JWT;
 
     constructor(
         private readonly secret: string,
         private readonly crypt: Crypt,
     ) {}
 
-    static getInstance(crypt: Crypt): JWTAdapter {
+    static getInstance(crypt: Crypt): JWT {
         if (!JWTAdapter.instance) {
             JWTAdapter.instance = new JWTAdapter(env.jwtSecret, crypt);
         }
