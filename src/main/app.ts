@@ -4,6 +4,7 @@ import express, { Express, Request, Response, NextFunction, json } from 'express
 import cors from 'cors';
 import authRoutes from '@main/routes/auth-routes';
 import userRoutes from '@main/routes/user-routes';
+import projectRoutes from '@main/routes/project-routes';
 
 export class App {
     private readonly app: Express;
@@ -62,6 +63,16 @@ export class App {
         apiRouter.use(
             '/user',
             userRoutes(this.logger, this.container.resolve('AuthController'), this.container.resolve('UserController')),
+        );
+
+        // Project routes
+        apiRouter.use(
+            '/project',
+            projectRoutes(
+                this.logger,
+                this.container.resolve('AuthController'),
+                this.container.resolve('ProjectController'),
+            ),
         );
 
         // Mount API routes

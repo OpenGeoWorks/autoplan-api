@@ -24,6 +24,12 @@ import { Hash } from '@domain/interfaces/cryptography/Hash';
 import { JWT } from '@domain/interfaces/cryptography/JWT';
 import { UserController } from '@adapters/controllers/UserController';
 import { SetProfile } from '@use-cases/user/SetProfile';
+import { ProjectRepo } from '@adapters/repositories/ProjectRepo';
+import { CreateProject } from '@use-cases/project/CreateProject';
+import { ProjectRepositoryInterface } from '@domain/interfaces/repositories/ProjectRepositoryInterface';
+import { EditProject } from '@use-cases/project/EditProject';
+import { DeleteProject } from '@use-cases/project/DeleteProject';
+import { ProjectController } from '@adapters/controllers/ProjectController';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -87,6 +93,9 @@ export function setupContainer(): Container {
     container.register('UserRepo', () => {
         return new UserRepo(container.resolve<Logger>('Logger'));
     });
+    container.register('ProjectRepo', () => {
+        return new ProjectRepo(container.resolve<Logger>('Logger'));
+    });
 
     // Register Caches
     container.register('OTPCache', () => {
@@ -132,6 +141,24 @@ export function setupContainer(): Container {
             container.resolve<UserRepositoryInterface>('UserRepo'),
         );
     });
+    container.register('CreateProjectUseCase', () => {
+        return new CreateProject(
+            container.resolve<Logger>('Logger'),
+            container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
+        );
+    });
+    container.register('EditProjectUseCase', () => {
+        return new EditProject(
+            container.resolve<Logger>('Logger'),
+            container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
+        );
+    });
+    container.register('DeleteProjectUseCase', () => {
+        return new DeleteProject(
+            container.resolve<Logger>('Logger'),
+            container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -144,13 +171,22 @@ export function setupContainer(): Container {
             container.resolve('AuthenticateUseCase'),
         );
     });
-
     container.register('UserController', () => {
         const logger = container.resolve<Logger>('Logger');
         return new UserController(
             logger,
             container.resolve('SetProfileUseCase'),
             container.resolve<UserRepositoryInterface>('UserRepo'),
+        );
+    });
+    container.register('ProjectController', () => {
+        const logger = container.resolve<Logger>('Logger');
+        return new ProjectController(
+            logger,
+            container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
+            container.resolve('CreateProjectUseCase'),
+            container.resolve('EditProjectUseCase'),
+            container.resolve('DeleteProjectUseCase'),
         );
     });
 
