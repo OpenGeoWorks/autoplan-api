@@ -45,6 +45,8 @@ export class SendLoginOTP {
         // generate OTP
         const otp = await this.createOTP.execute({ identifier: user.id, type: `login_otp`, exp: 10 });
 
+        console.log(otp);
+
         // send email
         await this.emailService.sendEmail({
             email: user.email,

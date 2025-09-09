@@ -33,6 +33,14 @@ import { ProjectController } from '@adapters/controllers/ProjectController';
 import { BackComputation } from '@use-cases/traversing/BackComputation';
 import { ForwardComputation } from '@use-cases/traversing/ForwardComputation';
 import { TraverseController } from '@adapters/controllers/TraverseController';
+import { PlanRepo } from '@adapters/repositories/PlanRepo';
+import { CreatePlan } from '@use-cases/plan/CreatePlan';
+import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
+import { DeletePlan } from '@use-cases/plan/DeletePlan';
+import { EditCoordinates } from '@use-cases/plan/EditCoordinates';
+import { EditParcels } from '@use-cases/plan/EditParcels';
+import { EditPlan } from '@use-cases/plan/EditPlan';
+import { PlanController } from '@adapters/controllers/PlanController';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -98,6 +106,9 @@ export function setupContainer(): Container {
     });
     container.register('ProjectRepo', () => {
         return new ProjectRepo(container.resolve<Logger>('Logger'));
+    });
+    container.register('PlanRepo', () => {
+        return new PlanRepo(container.resolve<Logger>('Logger'));
     });
 
     // Register Caches
@@ -168,6 +179,37 @@ export function setupContainer(): Container {
     container.register('ForwardComputationUseCase', () => {
         return new ForwardComputation(container.resolve<Logger>('Logger'));
     });
+    container.register('CreatePlanUseCase', () => {
+        return new CreatePlan(
+            container.resolve<Logger>('Logger'),
+            container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
+    container.register('DeletePlanUseCase', () => {
+        return new DeletePlan(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
+    container.register('EditCoordinateUseCase', () => {
+        return new EditCoordinates(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
+    container.register('EditParcelUseCase', () => {
+        return new EditParcels(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
+    container.register('EditPlanUseCase', () => {
+        return new EditPlan(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -204,6 +246,18 @@ export function setupContainer(): Container {
             logger,
             container.resolve('BackComputationUseCase'),
             container.resolve('ForwardComputationUseCase'),
+        );
+    });
+    container.register('PlanController', () => {
+        const logger = container.resolve<Logger>('Logger');
+        return new PlanController(
+            logger,
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+            container.resolve('CreatePlanUseCase'),
+            container.resolve('DeletePlanUseCase'),
+            container.resolve('EditCoordinateUseCase'),
+            container.resolve('EditParcelUseCase'),
+            container.resolve('EditPlanUseCase'),
         );
     });
 

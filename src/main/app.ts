@@ -6,6 +6,7 @@ import authRoutes from '@main/routes/auth-routes';
 import userRoutes from '@main/routes/user-routes';
 import projectRoutes from '@main/routes/project-routes';
 import traverseRoutes from '@main/routes/traverse-routes';
+import planRoutes from '@main/routes/plan-routes';
 
 export class App {
     private readonly app: Express;
@@ -84,6 +85,12 @@ export class App {
                 this.container.resolve('AuthController'),
                 this.container.resolve('TraverseController'),
             ),
+        );
+
+        // Plan Routes
+        apiRouter.use(
+            '/plan',
+            planRoutes(this.logger, this.container.resolve('AuthController'), this.container.resolve('PlanController')),
         );
 
         // Mount API routes
