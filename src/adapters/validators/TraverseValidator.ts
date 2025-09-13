@@ -51,6 +51,7 @@ export class TraverseValidator {
                 },
                 distance: 'required|numeric',
             },
+            misclosure_correction: 'boolean',
         };
 
         try {
