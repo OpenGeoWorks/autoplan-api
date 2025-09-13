@@ -6,7 +6,9 @@ import { Bearing } from '@domain/entities/Bearing';
 
 export interface ForwardComputationRequest {
     start: CoordinateProps;
-    legs: Pick<TraverseLeg, 'from' | 'to' | 'bearing' | 'distance'>[];
+    legs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[];
+    misclosure_correction?: boolean;
+    round?: boolean;
 }
 
 export interface ForwardComputationResponse {
@@ -47,7 +49,7 @@ export class ForwardComputation {
 
         for (let i = 0; i < data.legs.length; i++) {
             const leg = data.legs[i];
-            const bearing = new Bearing(leg.bearing);
+            const bearing = new Bearing(leg.bearing!);
 
             // calculate delta northing and easting
             const bearingRadians = (bearing.toDecimal() * Math.PI) / 180;
@@ -72,15 +74,15 @@ export class ForwardComputation {
             };
 
             if (i == 0) {
-                traverseLeg.arithmetic_sum_northing = Math.round(Math.abs(traverseLeg.delta_northing));
-                traverseLeg.arithmetic_sum_easting = Math.round(Math.abs(traverseLeg.delta_easting));
+                traverseLeg.arithmetic_sum_northing = Math.round(Math.abs(traverseLeg.delta_northing as number));
+                traverseLeg.arithmetic_sum_easting = Math.round(Math.abs(traverseLeg.delta_easting as number));
             } else {
                 traverseLeg.arithmetic_sum_northing =
                     (computedLegs[i - 1].arithmetic_sum_northing as number) +
-                    Math.round(Math.abs(traverseLeg.delta_northing));
+                    Math.round(Math.abs(traverseLeg.delta_northing as number));
                 traverseLeg.arithmetic_sum_easting =
                     (computedLegs[i - 1].arithmetic_sum_easting as number) +
-                    Math.round(Math.abs(traverseLeg.delta_easting));
+                    Math.round(Math.abs(traverseLeg.delta_easting as number));
             }
 
             computedLegs.push(traverseLeg);
@@ -89,7 +91,7 @@ export class ForwardComputation {
         }
 
         // check if its a closed traverse to account for error
-        if (data.start.id === computedLegs[computedLegs.length - 1].to.id) {
+        if (data.start.id === computedLegs[computedLegs.length - 1].to.id && data.misclosure_correction) {
             const lastLeg = computedLegs[computedLegs.length - 1].to;
 
             // calculate misclosures
@@ -133,9 +135,11 @@ export class ForwardComputation {
             start: new Coordinate(data.start),
             computed_legs: computedLegs.map(leg => {
                 const traverse = new TraverseLeg(leg);
-                traverse.round();
-                traverse.from.round();
-                traverse.to.round();
+                if (data.round) {
+                    traverse.round();
+                    traverse.from.round();
+                    traverse.to.round();
+                }
                 return traverse;
             }),
             traverse,

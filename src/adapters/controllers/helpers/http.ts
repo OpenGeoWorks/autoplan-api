@@ -49,6 +49,7 @@ export const serverError = (error?: Error | unknown): HttpResponse<Error> => {
 };
 
 export const handleError = (error?: Error | unknown): HttpResponse<Error> => {
+    console.log(error);
     if (error instanceof BadRequestError) {
         return badRequest(error);
     } else if (error instanceof NotFoundError) {

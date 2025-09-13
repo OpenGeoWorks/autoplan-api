@@ -7,6 +7,8 @@ import { Bearing } from '@domain/entities/Bearing';
 
 export interface BackComputationRequest {
     points: CoordinateProps[];
+    area?: boolean;
+    round?: boolean;
 }
 
 export interface BackComputationResponse {
@@ -79,7 +81,9 @@ export class BackComputation {
         return {
             traverse_legs: traverseLegs.map(leg => {
                 const traverse = new TraverseLeg(leg);
-                traverse.round();
+                if (data.round) {
+                    traverse.round();
+                }
                 return traverse;
             }),
             traverse: traverse,

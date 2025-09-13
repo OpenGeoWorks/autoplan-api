@@ -41,6 +41,7 @@ import { EditCoordinates } from '@use-cases/plan/EditCoordinates';
 import { EditParcels } from '@use-cases/plan/EditParcels';
 import { EditPlan } from '@use-cases/plan/EditPlan';
 import { PlanController } from '@adapters/controllers/PlanController';
+import { TraverseComputation } from '@use-cases/traversing/TraverseComputation';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -179,6 +180,13 @@ export function setupContainer(): Container {
     container.register('ForwardComputationUseCase', () => {
         return new ForwardComputation(container.resolve<Logger>('Logger'));
     });
+    container.register('TraverseComputationUseCase', () => {
+        return new TraverseComputation(
+            container.resolve<Logger>('Logger'),
+            container.resolve('ForwardComputationUseCase'),
+            container.resolve('BackComputationUseCase'),
+        );
+    });
     container.register('CreatePlanUseCase', () => {
         return new CreatePlan(
             container.resolve<Logger>('Logger'),
@@ -246,6 +254,7 @@ export function setupContainer(): Container {
             logger,
             container.resolve('BackComputationUseCase'),
             container.resolve('ForwardComputationUseCase'),
+            container.resolve('TraverseComputationUseCase'),
         );
     });
     container.register('PlanController', () => {

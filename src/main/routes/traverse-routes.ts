@@ -16,6 +16,10 @@ export default (logger: Logger, authController: AuthController, traverseControll
         '/forward-computation',
         expressRouteAdapter(traverseController.forwardComputation.bind(traverseController)),
     );
+    router.post(
+        '/traverse-computation',
+        expressRouteAdapter(traverseController.traverseComputation.bind(traverseController)),
+    );
 
     return router;
 };
