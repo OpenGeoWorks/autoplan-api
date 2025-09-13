@@ -5,6 +5,7 @@ import BadRequestError from '@domain/errors/BadRequestError';
 import { Bearing } from '@domain/entities/Bearing';
 
 export interface ForwardComputationRequest {
+    coordinates: CoordinateProps[];
     start: CoordinateProps;
     legs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[];
     misclosure_correction?: boolean;
@@ -28,7 +29,7 @@ export interface ForwardComputationResponse {
 export class ForwardComputation {
     constructor(private readonly logger: Logger) {}
 
-    async execute(data: ForwardComputationRequest): Promise<ForwardComputationResponse> {
+    execute(data: ForwardComputationRequest): ForwardComputationResponse {
         this.logger.debug('ForwardComputation execute');
 
         // check the length of legs
@@ -40,6 +41,12 @@ export class ForwardComputation {
             throw new BadRequestError(
                 `Starting point ID (${data.start.id}) does not match the first leg's from ID (${data.legs[0].from.id})`,
             );
+        }
+
+        // check if start point is in array of coordinates
+        const startPoint = data.coordinates.find(coord => coord.id === data.start.id);
+        if (!startPoint) {
+            data.coordinates.push(data.start);
         }
 
         // Initialize the starting point
@@ -90,13 +97,21 @@ export class ForwardComputation {
             totalDistance += leg.distance;
         }
 
-        // check if its a closed traverse to account for error
-        if (data.start.id === computedLegs[computedLegs.length - 1].to.id && data.misclosure_correction) {
+        // account for error
+        if (
+            data.misclosure_correction &&
+            data.coordinates.some(coord => coord.id === data.legs[data.legs.length - 1].to.id)
+        ) {
             const lastLeg = computedLegs[computedLegs.length - 1].to;
+            const knownPoint = data.coordinates.find(coord => coord.id === lastLeg.id);
+
+            if (!knownPoint) {
+                throw new BadRequestError('Something went wrong');
+            }
 
             // calculate misclosures
-            const northingMisclosure = (lastLeg.northing - data.start.northing) * -1;
-            const eastingMisclosure = (lastLeg.easting - data.start.easting) * -1;
+            const northingMisclosure = (lastLeg.northing - knownPoint.northing) * -1;
+            const eastingMisclosure = (lastLeg.easting - knownPoint.easting) * -1;
 
             const northingQuotient =
                 northingMisclosure / computedLegs[computedLegs.length - 1].arithmetic_sum_northing!;
@@ -115,6 +130,8 @@ export class ForwardComputation {
                     computedLegs[i + 1].from.easting = computedLegs[i].to.easting;
                 }
             }
+
+            computedLegs[computedLegs.length - 1].to = knownPoint;
         }
 
         // Calculate bounding box

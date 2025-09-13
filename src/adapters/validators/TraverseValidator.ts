@@ -23,6 +23,13 @@ export class TraverseValidator {
 
     static validateForwardComputation(data: any): Error | null {
         const rules = {
+            coordinates: 'array',
+            'coordinates.*': {
+                id: 'required|string',
+                northing: 'required|numeric',
+                easting: 'required|numeric',
+                elevation: 'numeric',
+            },
             start: {
                 id: 'required|string',
                 northing: 'required|numeric',

@@ -36,7 +36,7 @@ export class TraverseController {
                 return badRequest(error);
             }
 
-            const result = await this.backComputationUseCase.execute(req.body!);
+            const result = this.backComputationUseCase.execute({ ...req.body!, round: true, area: true });
             return success(result);
         } catch (e) {
             return handleError(e);
@@ -52,7 +52,7 @@ export class TraverseController {
                 return badRequest(error);
             }
 
-            const result = await this.forwardComputationUseCase.execute(req.body!);
+            const result = this.forwardComputationUseCase.execute({ ...req.body!, round: true });
             return success(result);
         } catch (e) {
             return handleError(e);
@@ -68,7 +68,7 @@ export class TraverseController {
                 return badRequest(error);
             }
 
-            const result = await this.traverseComputationUseCase.execute(req.body!);
+            const result = this.traverseComputationUseCase.execute({ ...req.body!, round: true });
             return success(result);
         } catch (e) {
             return handleError(e);

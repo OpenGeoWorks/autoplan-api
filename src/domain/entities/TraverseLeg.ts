@@ -71,6 +71,22 @@ export class TraverseLeg {
             this.bearing.round();
         }
 
+        if (this.observed_angle) {
+            this.observed_angle.round();
+        }
+
+        if (this.back_bearing) {
+            this.back_bearing.round();
+        }
+
+        if (this.forward_bearing) {
+            this.forward_bearing.round();
+        }
+
+        if (this.bearing_correction) {
+            this.bearing_correction.round();
+        }
+
         if (this.delta_northing) {
             this.delta_northing = Math.round(this.delta_northing * 1000) / 1000;
         }
@@ -89,6 +105,14 @@ export class TraverseLeg {
 
         if (this.elevation_misclosure) {
             this.elevation_misclosure = Math.round(this.elevation_misclosure * 100000) / 100000;
+        }
+
+        if (this.from) {
+            this.from.round();
+        }
+
+        if (this.to) {
+            this.to.round();
         }
     }
 }

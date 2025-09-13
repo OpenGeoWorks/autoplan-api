@@ -10,6 +10,7 @@ export interface TraverseComputationRequest {
     coordinates: CoordinateProps[];
     legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
     misclosure_correction?: boolean;
+    round?: boolean;
 }
 
 export interface TraverseComputationResponse {
@@ -23,7 +24,7 @@ export class TraverseComputation {
         private readonly backComputation: BackComputation,
     ) {}
 
-    async execute(data: TraverseComputationRequest): Promise<TraverseComputationResponse> {
+    execute(data: TraverseComputationRequest): TraverseComputationResponse {
         this.logger.debug('TraverseComputation execute');
 
         if (data.coordinates.length < 2) {
@@ -79,7 +80,7 @@ export class TraverseComputation {
         }
 
         // perform back computation
-        const backComputationResult = await this.backComputation.execute({
+        const backComputationResult = this.backComputation.execute({
             points: arrangedCoordinates,
             area: false,
             round: false,
@@ -153,25 +154,49 @@ export class TraverseComputation {
             }
         }
 
+        const forwardCompLegs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[] = [];
+        if (isCheckLeg) {
+            for (let i = 0; i < legsWithBearings.length; i++) {
+                if (isCheckLeg && i === legsWithBearings.length - 1) {
+                    break;
+                }
+
+                forwardCompLegs.push({
+                    from: legsWithBearings[i].from,
+                    to: legsWithBearings[i].to,
+                    distance: legsWithBearings[i].distance,
+                    bearing: legsWithBearings[i].bearing,
+                });
+            }
+        }
+
         // perform forward computation
-        const forwardComputationResult = await this.forwardComputation.execute({
+        const forwardComputationResult = this.forwardComputation.execute({
+            coordinates: data.coordinates,
             start: firstCoordinate,
-            legs: legsWithBearings.map(leg => {
-                return {
-                    from: leg.from,
-                    to: leg.to,
-                    distance: leg.distance!,
-                    bearing: leg.bearing!,
-                };
-            }),
+            legs: forwardCompLegs,
             misclosure_correction: data.misclosure_correction,
             round: false,
         });
 
         const result: TraverseLeg[] = [];
-        result.push(...backComputationResult.traverse_legs);
+
+        for (let i = 0; i < backComputationResult.traverse_legs.length; i++) {
+            if (data.round) {
+                backComputationResult.traverse_legs[i].round();
+            }
+
+            result.push(backComputationResult.traverse_legs[i]);
+        }
 
         for (let i = 0; i < legsWithBearings.length; i++) {
+            if (isCheckLeg && i === legsWithBearings.length - 1) {
+                if (data.round) {
+                    legsWithBearings[i].round();
+                }
+                result.push(legsWithBearings[i]);
+                break;
+            }
             legsWithBearings[i].from = forwardComputationResult.computed_legs[i].from;
             legsWithBearings[i].to = forwardComputationResult.computed_legs[i].to;
             legsWithBearings[i].delta_northing = forwardComputationResult.computed_legs[i].delta_northing;
@@ -182,6 +207,11 @@ export class TraverseComputation {
                 forwardComputationResult.computed_legs[i].arithmetic_sum_easting;
             legsWithBearings[i].northing_misclosure = forwardComputationResult.computed_legs[i].northing_misclosure;
             legsWithBearings[i].easting_misclosure = forwardComputationResult.computed_legs[i].easting_misclosure;
+
+            if (data.round) {
+                legsWithBearings[i].round();
+            }
+
             result.push(legsWithBearings[i]);
         }
 

@@ -42,6 +42,7 @@ import { EditParcels } from '@use-cases/plan/EditParcels';
 import { EditPlan } from '@use-cases/plan/EditPlan';
 import { PlanController } from '@adapters/controllers/PlanController';
 import { TraverseComputation } from '@use-cases/traversing/TraverseComputation';
+import { AreaComputation } from '@use-cases/traversing/AreaComputation';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -174,8 +175,11 @@ export function setupContainer(): Container {
             container.resolve<ProjectRepositoryInterface>('ProjectRepo'),
         );
     });
+    container.register('AreaComputationUseCase', () => {
+        return new AreaComputation(container.resolve<Logger>('Logger'));
+    });
     container.register('BackComputationUseCase', () => {
-        return new BackComputation(container.resolve<Logger>('Logger'));
+        return new BackComputation(container.resolve<Logger>('Logger'), container.resolve('AreaComputationUseCase'));
     });
     container.register('ForwardComputationUseCase', () => {
         return new ForwardComputation(container.resolve<Logger>('Logger'));

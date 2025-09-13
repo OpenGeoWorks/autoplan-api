@@ -4,6 +4,7 @@ import BadRequestError from '@domain/errors/BadRequestError';
 import { TraverseLeg, TraverseLegProps } from '@domain/entities/TraverseLeg';
 import { calculateDistance } from '@utils/distance';
 import { Bearing } from '@domain/entities/Bearing';
+import { AreaComputation } from '@use-cases/traversing/AreaComputation';
 
 export interface BackComputationRequest {
     points: CoordinateProps[];
@@ -15,6 +16,7 @@ export interface BackComputationResponse {
     traverse_legs: TraverseLeg[];
     traverse: {
         total_distance: number;
+        area?: number;
         bounding_box: {
             min_northing: number;
             max_northing: number;
@@ -25,9 +27,12 @@ export interface BackComputationResponse {
 }
 
 export class BackComputation {
-    constructor(private readonly logger: Logger) {}
+    constructor(
+        private readonly logger: Logger,
+        private readonly areaComputation: AreaComputation,
+    ) {}
 
-    async execute(data: BackComputationRequest): Promise<BackComputationResponse> {
+    execute(data: BackComputationRequest): BackComputationResponse {
         this.logger.info('BackComputation execute');
 
         // check length of points
@@ -76,7 +81,13 @@ export class BackComputation {
                 min_easting: Math.round(Math.min(...eastingCoordinates) * 1000) / 1000,
                 max_easting: Math.round(Math.max(...eastingCoordinates) * 1000) / 1000,
             },
+            area: 0,
         };
+
+        if (data.area) {
+            const area = this.areaComputation.execute({ points: data.points, round: true });
+            traverse.area = area.area;
+        }
 
         return {
             traverse_legs: traverseLegs.map(leg => {
