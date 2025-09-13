@@ -1,5 +1,5 @@
 import validator from '@infra/validatorjs/validator';
-import { ProjectStatus, ProjectType } from '@domain/entities/Project';
+import { ProjectStatus } from '@domain/entities/Project';
 
 export class ProjectValidator {
     static validateCreateProject(data: any): Error | null {
@@ -7,7 +7,6 @@ export class ProjectValidator {
             name: 'required|string',
             description: 'string',
             number: 'string',
-            type: `required|in:${Object.values(ProjectType).join(',')}`,
             location: {
                 address: 'string',
                 city: 'string',

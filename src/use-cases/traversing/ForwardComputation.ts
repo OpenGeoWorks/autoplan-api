@@ -5,7 +5,7 @@ import BadRequestError from '@domain/errors/BadRequestError';
 import { Bearing } from '@domain/entities/Bearing';
 
 export interface ForwardComputationRequest {
-    coordinates: CoordinateProps[];
+    coordinates?: CoordinateProps[];
     start: CoordinateProps;
     legs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[];
     misclosure_correction?: boolean;
@@ -41,6 +41,10 @@ export class ForwardComputation {
             throw new BadRequestError(
                 `Starting point ID (${data.start.id}) does not match the first leg's from ID (${data.legs[0].from.id})`,
             );
+        }
+
+        if (!data.coordinates) {
+            data.coordinates = [];
         }
 
         // check if start point is in array of coordinates

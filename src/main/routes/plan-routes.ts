@@ -18,6 +18,14 @@ export default (logger: Logger, authController: AuthController, planController: 
     router.put('/coordinates/edit/:plan_id', expressRouteAdapter(planController.editCoordinates.bind(planController)));
     router.put('/parcels/edit/:plan_id', expressRouteAdapter(planController.editParcels.bind(planController)));
     router.delete('/delete/:plan_id', expressRouteAdapter(planController.deletePlan.bind(planController)));
+    router.put(
+        '/traverse-data/edit/:plan_id',
+        expressRouteAdapter(planController.editTraverseComputation.bind(planController)),
+    );
+    router.put(
+        '/forward-data/edit/:plan_id',
+        expressRouteAdapter(planController.editForwardComputation.bind(planController)),
+    );
 
     return router;
 };

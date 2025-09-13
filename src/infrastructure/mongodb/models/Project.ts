@@ -58,6 +58,7 @@ ProjectSchema.index(
     {
         name: 'text',
         description: 'text',
+        number: 'text',
     },
     { name: 'default', default_language: 'en', language_override: 'en' },
 );

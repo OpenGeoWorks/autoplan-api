@@ -1,6 +1,7 @@
 import { UserProps } from '@domain/entities/User';
 import { ProjectProps } from '@domain/entities/Project';
 import { CoordinateProps } from '@domain/entities/Coordinate';
+import { TraverseLegProps } from '@domain/entities/TraverseLeg';
 
 export enum PlanType {
     CADASTRAL = 'cadastral',
@@ -47,6 +48,17 @@ export interface PlanProps {
     beacon_type?: BeaconType;
     personel_name?: string;
     surveyor_name?: string;
+    forward_computation_data?: {
+        coordinates?: CoordinateProps[];
+        start: CoordinateProps;
+        legs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[];
+        misclosure_correction?: boolean;
+    };
+    traverse_computation_data?: {
+        coordinates: CoordinateProps[];
+        legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
+        misclosure_correction?: boolean;
+    };
 }
 
 export class Plan {
@@ -71,6 +83,17 @@ export class Plan {
     public readonly beacon_type: BeaconType;
     public readonly personel_name: string;
     public readonly surveyor_name: string;
+    public readonly forward_computation_data?: {
+        coordinates?: CoordinateProps[];
+        start: CoordinateProps;
+        legs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[];
+        misclosure_correction?: boolean;
+    };
+    public readonly traverse_computation_data?: {
+        coordinates: CoordinateProps[];
+        legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
+        misclosure_correction?: boolean;
+    };
 
     constructor(props: PlanProps) {
         this.id = props.id;
@@ -94,6 +117,8 @@ export class Plan {
         this.beacon_type = props.beacon_type || BeaconType.NONE;
         this.personel_name = props.personel_name || '';
         this.surveyor_name = props.surveyor_name || '';
+        this.forward_computation_data = props.forward_computation_data;
+        this.traverse_computation_data = props.traverse_computation_data;
     }
 }
 

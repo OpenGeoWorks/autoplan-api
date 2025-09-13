@@ -12,6 +12,8 @@ import { Plan } from '@domain/entities/Plan';
 import { badRequest, handleError, noContent, notFound, success } from '@adapters/controllers/helpers/http';
 import { PlanValidator } from '@adapters/validators/PlanValidator';
 import { parseQuery } from '@adapters/controllers/helpers/query';
+import { EditTraverseComputation, EditTraverseComputationRequest } from '@use-cases/plan/EditTraverseComputation';
+import { EditForwardComputation, EditForwardComputationRequest } from '@use-cases/plan/EditForwardComputation';
 
 export class PlanController {
     constructor(
@@ -22,6 +24,8 @@ export class PlanController {
         private readonly editCoordinatesUseCase: EditCoordinates,
         private readonly editParcelUseCase: EditParcels,
         private readonly editPlanUseCase: EditPlan,
+        private readonly editTraverseComputationUseCase: EditTraverseComputation,
+        private readonly editForwardComputationUseCase: EditForwardComputation,
     ) {}
 
     async createPlan(
@@ -98,6 +102,64 @@ export class PlanController {
             const plan = await this.editParcelUseCase.execute({
                 plan_id: req.params!.plan_id,
                 parcels: req.body!.parcels,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editTraverseComputation(
+        req: HttpRequest<
+            EditTraverseComputationRequest['traverse_data'],
+            { plan_id: string },
+            undefined,
+            undefined,
+            AuthenticateResponse
+        >,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateTraverseData(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editTraverseComputationUseCase.execute({
+                plan_id: req.params!.plan_id,
+                traverse_data: req.body!,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editForwardComputation(
+        req: HttpRequest<
+            EditForwardComputationRequest['forward_data'],
+            { plan_id: string },
+            undefined,
+            undefined,
+            AuthenticateResponse
+        >,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateForwardData(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editForwardComputationUseCase.execute({
+                plan_id: req.params!.plan_id,
+                forward_data: req.body!,
                 options: {
                     filter: { user: req.user!.id },
                 },

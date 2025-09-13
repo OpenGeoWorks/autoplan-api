@@ -30,6 +30,54 @@ export const parcelSchema = new Schema(
     },
 );
 
+export const bearingSchema = new Schema(
+    {
+        degrees: Number,
+        minutes: Number,
+        seconds: Number,
+        decimal: Number,
+    },
+    {
+        _id: false,
+    },
+);
+
+export const traverseLegSchema = new Schema(
+    {
+        from: coordinateSchema,
+        to: coordinateSchema,
+        observed_angle: bearingSchema,
+        bearing: bearingSchema,
+        distance: Number,
+    },
+    {
+        _id: false,
+    },
+);
+
+export const forwardComputationSchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        start: coordinateSchema,
+        legs: [traverseLegSchema],
+        misclosure_correction: Boolean,
+    },
+    {
+        _id: false,
+    },
+);
+
+export const traverseComputationSchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        legs: [traverseLegSchema],
+        misclosure_correction: Boolean,
+    },
+    {
+        _id: false,
+    },
+);
+
 const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
     {
         user: {
@@ -109,6 +157,12 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
             type: String,
             default: '',
         },
+        forward_computation_data: {
+            type: forwardComputationSchema,
+        },
+        traverse_computation_data: {
+            type: traverseComputationSchema,
+        },
         deleted: {
             type: Boolean,
             select: false,
@@ -126,6 +180,7 @@ PlanSchema.index(
     {
         name: 'text',
         title: 'text',
+        plan_number: 'text',
     },
     {
         name: 'default',

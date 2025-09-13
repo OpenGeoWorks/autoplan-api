@@ -43,6 +43,8 @@ import { EditPlan } from '@use-cases/plan/EditPlan';
 import { PlanController } from '@adapters/controllers/PlanController';
 import { TraverseComputation } from '@use-cases/traversing/TraverseComputation';
 import { AreaComputation } from '@use-cases/traversing/AreaComputation';
+import { EditTraverseComputation } from '@use-cases/plan/EditTraverseComputation';
+import { EditForwardComputation } from '@use-cases/plan/EditForwardComputation';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -222,6 +224,19 @@ export function setupContainer(): Container {
             container.resolve<PlanRepositoryInterface>('PlanRepo'),
         );
     });
+    container.register('EditTraverseComputationUseCase', () => {
+        return new EditTraverseComputation(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
+
+    container.register('EditForwardComputationUseCase', () => {
+        return new EditForwardComputation(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -271,6 +286,8 @@ export function setupContainer(): Container {
             container.resolve('EditCoordinateUseCase'),
             container.resolve('EditParcelUseCase'),
             container.resolve('EditPlanUseCase'),
+            container.resolve('EditTraverseComputationUseCase'),
+            container.resolve('EditForwardComputationUseCase'),
         );
     });
 

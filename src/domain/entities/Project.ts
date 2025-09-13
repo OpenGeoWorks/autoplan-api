@@ -5,7 +5,7 @@ export enum ProjectStatus {
     IN_PROGRESS = 'in_progress',
     FIELD_WORK_COMPLETE = 'field_work_complete',
     COMPUTED = 'computed',
-    PLAN_PREPARED = 'plan-prepared',
+    PLAN_PREPARED = 'plan_prepared',
     COMPLETED = 'completed',
 }
 
