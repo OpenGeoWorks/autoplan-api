@@ -4,8 +4,8 @@ import { CoordinateProps } from '@domain/entities/Coordinate';
 
 export enum PlanType {
     CADASTRAL = 'cadastral',
-    TOPOGRAPHICAL = 'topographical',
-    ENGINEERING = 'engineering',
+    LAYOUT = 'layout',
+    TOPOGRAPHIC = 'topographic',
     ROUTE = 'route',
 }
 

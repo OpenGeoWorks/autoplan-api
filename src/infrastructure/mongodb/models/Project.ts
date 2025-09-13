@@ -1,5 +1,5 @@
 import { Document, Schema, Model, model } from 'mongoose';
-import { ProjectProps, ProjectStatus, ProjectType } from '@domain/entities/Project';
+import { ProjectProps, ProjectStatus } from '@domain/entities/Project';
 
 export interface ProjectDocument extends Document, ProjectProps {
     id: string;
@@ -21,11 +21,6 @@ const ProjectSchema: Schema<ProjectDocument> = new Schema<ProjectDocument>(
         },
         description: String,
         number: String,
-        type: {
-            type: String,
-            enum: Object.values(ProjectType),
-            required: true,
-        },
         status: {
             type: String,
             enum: Object.values(ProjectStatus),

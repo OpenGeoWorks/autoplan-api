@@ -1,12 +1,5 @@
 import { UserProps } from '@domain/entities/User';
 
-export enum ProjectType {
-    TOPOGRAPHICAL = 'topographical',
-    CADASTRAL = 'cadastral',
-    ENGINEERING = 'engineering',
-    ROUTE = 'route',
-}
-
 export enum ProjectStatus {
     DRAFT = 'draft',
     IN_PROGRESS = 'in_progress',
@@ -42,7 +35,6 @@ export interface ProjectProps {
     name: string;
     description?: string;
     number?: string;
-    type: ProjectType;
     status: ProjectStatus;
     location?: LocationProps;
     client?: ClientProps;
@@ -57,7 +49,6 @@ export class Project {
     public readonly name: string;
     public readonly description?: string;
     public readonly number?: string;
-    public readonly type: ProjectType;
     public readonly status: ProjectStatus;
     public readonly location?: LocationProps;
     public readonly client?: ClientProps;
@@ -71,7 +62,6 @@ export class Project {
         this.name = props.name;
         this.description = props.description;
         this.number = props.number;
-        this.type = props.type;
         this.status = props.status;
         this.location = props.location;
         this.client = props.client;
