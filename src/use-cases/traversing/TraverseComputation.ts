@@ -1,7 +1,7 @@
 import { Logger } from '@domain/types/Common';
 import { ForwardComputation } from '@use-cases/traversing/ForwardComputation';
 import { BackComputation } from '@use-cases/traversing/BackComputation';
-import { CoordinateProps } from '@domain/entities/Coordinate';
+import { Coordinate, CoordinateProps } from '@domain/entities/Coordinate';
 import { TraverseLeg, TraverseLegProps } from '@domain/entities/TraverseLeg';
 import BadRequestError from '@domain/errors/BadRequestError';
 import { Bearing } from '@domain/entities/Bearing';
@@ -121,6 +121,10 @@ export class TraverseComputation {
                     backComputationResult.traverse_legs[backComputationResult.traverse_legs.length - 1].bearing;
                 frontLeg.distance =
                     backComputationResult.traverse_legs[backComputationResult.traverse_legs.length - 1].distance;
+                const from = data.coordinates.find(coord => coord.id === frontLeg.from.id);
+                const to = data.coordinates.find(coord => coord.id === frontLeg.to.id);
+                frontLeg.from = new Coordinate(from || frontLeg.from);
+                frontLeg.to = new Coordinate(to || frontLeg.to);
             }
 
             currentBearing = frontLeg.forward_bearing;
@@ -155,19 +159,17 @@ export class TraverseComputation {
         }
 
         const forwardCompLegs: Pick<TraverseLegProps, 'from' | 'to' | 'bearing' | 'distance'>[] = [];
-        if (isCheckLeg) {
-            for (let i = 0; i < legsWithBearings.length; i++) {
-                if (isCheckLeg && i === legsWithBearings.length - 1) {
-                    break;
-                }
-
-                forwardCompLegs.push({
-                    from: legsWithBearings[i].from,
-                    to: legsWithBearings[i].to,
-                    distance: legsWithBearings[i].distance,
-                    bearing: legsWithBearings[i].bearing,
-                });
+        for (let i = 0; i < legsWithBearings.length; i++) {
+            if (isCheckLeg && i === legsWithBearings.length - 1) {
+                break;
             }
+
+            forwardCompLegs.push({
+                from: legsWithBearings[i].from,
+                to: legsWithBearings[i].to,
+                distance: legsWithBearings[i].distance,
+                bearing: legsWithBearings[i].bearing,
+            });
         }
 
         // perform forward computation
