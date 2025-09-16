@@ -64,8 +64,20 @@ export class Login {
         const jwtToken = await this.jwt.generate(JSON.stringify(jwtData));
 
         // generate api token
-        const apiToken = await this.createToken.execute({ data: jwtData, type: 'api', exp: 60 });
-        const refreshToken = await this.createToken.execute({ data: jwtData, type: 'refresh', exp: 70 });
+        const dayInSeconds = 60 * 60 * 24;
+        const monthInSeconds = dayInSeconds * 30;
+
+        const apiToken = await this.createToken.execute({
+            data: jwtData,
+            type: 'api',
+            exp: dayInSeconds,
+        });
+
+        const refreshToken = await this.createToken.execute({
+            data: jwtData,
+            type: 'refresh',
+            exp: monthInSeconds,
+        });
 
         return {
             user,
