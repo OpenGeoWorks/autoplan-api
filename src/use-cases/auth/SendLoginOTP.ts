@@ -32,7 +32,7 @@ export class SendLoginOTP {
     async execute(data: SendLoginOTPRequest): Promise<void> {
         this.logger.info('SendLoginOTP execute', data);
 
-        // get user by email
+        // get user by email..
         let user = await this.userRepo.getUserByEmail(data.email);
         if (!user) {
             // create user
