@@ -46,7 +46,7 @@ export class Login {
             throw new NotFoundError('User not found');
         }
 
-        // verify token
+        // verify token..
         await this.verifyOTP.execute({ type: 'login_otp', identifier: user.id, token: data.token, use: true });
 
         if (user.status === UserStatus.INACTIVE) {
