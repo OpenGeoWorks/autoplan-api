@@ -1,0 +1,15 @@
+# fly.toml app configuration file generated for fyp-api on 2025-09-16T14:18:55+01:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "fyp-api"
+primary_region = "ams"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]

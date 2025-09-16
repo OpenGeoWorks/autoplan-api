@@ -25,7 +25,7 @@ export class CreateOTP {
     }
 
     static generateToken(length: number): string {
-        let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        let chars = '0123456789';
         let token = '';
 
         for (let i = 0; i < length; i++) {
