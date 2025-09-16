@@ -18,6 +18,13 @@ export const encryptionKey = process.env.ENCRYPTION_KEY as string;
 export const mongodbURI = process.env.MONGO_URI as string;
 export const redisURI = process.env.REDIS_URI as string;
 export const resendApiKey = process.env.RESEND_API_KEY as string;
+export const aws = {
+    secretAccessKey: process.env.AWS_SECRET_KEY as string,
+    accessKeyId: process.env.AWS_ACCESS_KEY as string,
+    bucket: process.env.AWS_BUCKET as string,
+    region: process.env.AWS_REGION as string,
+    sesSender: process.env.AWS_SES_SENDER as string,
+};
 
 export default {
     port,
@@ -27,4 +34,5 @@ export default {
     redisURI,
     env: process.env.NODE_ENV || 'dev',
     resendApiKey,
+    aws,
 };

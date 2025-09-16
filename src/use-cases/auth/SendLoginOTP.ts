@@ -5,6 +5,9 @@ import { EmailServiceInterface } from '@domain/interfaces/services/EmailServiceI
 import { UserRole, UserStatus } from '@domain/entities/User';
 import { CreateOTP } from '@use-cases/otp/CreateOTP';
 import { Hash } from '@domain/interfaces/cryptography/Hash';
+import path from 'path';
+import fs from 'fs';
+import Handlebars from 'handlebars';
 
 export interface SendLoginOTPRequest {
     email: string;
@@ -20,8 +23,10 @@ export class SendLoginOTP {
         private readonly otpCache: OTPCacheInterface,
         private readonly emailService: EmailServiceInterface,
         private readonly hash: Hash,
+        private readonly otpTemplatePath?: string,
     ) {
         this.createOTP = new CreateOTP(logger, otpCache, hash);
+        this.otpTemplatePath = path.join(__dirname, '../../domain/templates', 'otp.html');
     }
 
     async execute(data: SendLoginOTPRequest): Promise<void> {
@@ -44,34 +49,24 @@ export class SendLoginOTP {
 
         // generate OTP
         const otp = await this.createOTP.execute({ identifier: user.id, type: `login_otp`, exp: 10 });
-
-        console.log(otp);
-
-        // send email
-        await this.emailService.sendEmail({
-            email: user.email,
-            subject: 'Login OTP',
-            html: otp.replace(/(.{3})(.{3})/, '$1-$2'),
-        });
+        await this.sendOTP(user.email, 10, otp);
     }
 
-    // async sendEmail(admin: { first_name: string; email: string }, otp: string) {
-    //     const templateData: Record<string, string> = {
-    //         title: 'Reset Token',
-    //         name: admin.first_name[0].toUpperCase() + admin.first_name.slice(1),
-    //         token: otp,
-    //         body: "This OTP will expire in 10 minutes. Don't share this OTP with anyone.",
-    //     };
-    //
-    //     const templateSource = fs.readFileSync(this.otpTemplatePath!, 'utf-8');
-    //
-    //     // get template file
-    //     const template = Handlebars.compile(templateSource);
-    //
-    //     await this.sendEmailService.sendEmail({
-    //         email: admin.email,
-    //         subject: 'Reset Token',
-    //         html: template(templateData),
-    //     });
-    // }
+    async sendOTP(email: string, exp: number, otp: string) {
+        const templateData: Record<string, string> = {
+            exp: exp.toString(),
+            token: otp,
+        };
+
+        const templateSource = fs.readFileSync(this.otpTemplatePath!, 'utf-8');
+
+        // get template file
+        const template = Handlebars.compile(templateSource);
+
+        await this.emailService.sendEmail({
+            email: email,
+            subject: 'One Time Token',
+            html: template(templateData),
+        });
+    }
 }

@@ -23,11 +23,13 @@
     "start": "node dist/main/server.js"
   },
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.888.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "handlebars": "^4.7.8",
     "jsonwebtoken": "^9.0.2",
     "module-alias": "^2.2.3",
     "moment": "^2.30.1",
@@ -40,6 +42,7 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10",
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/crypto-js": "^4.2.2",

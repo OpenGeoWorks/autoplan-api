@@ -5,7 +5,6 @@ import { RedisConnection } from '@infra/redis/client';
 import { BcryptAdapter } from '@infra/cryptography/BcryptAdapter';
 import { CryptAdapter } from '@infra/cryptography/CryptAdapter';
 import { JWTAdapter } from '@infra/cryptography/JWTAdapter';
-import { Resend } from '@infra/resend/resend';
 import { Crypt } from '@domain/interfaces/cryptography/Crypt';
 import { ValidatorJS } from '@infra/validatorjs/validator';
 import { UserRepo } from '@adapters/repositories/UserRepo';
@@ -45,6 +44,7 @@ import { TraverseComputation } from '@use-cases/traversing/TraverseComputation';
 import { AreaComputation } from '@use-cases/traversing/AreaComputation';
 import { EditTraverseComputation } from '@use-cases/plan/EditTraverseComputation';
 import { EditForwardComputation } from '@use-cases/plan/EditForwardComputation';
+import { SES } from '@infra/ses/ses';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -101,7 +101,7 @@ export function setupContainer(): Container {
     container.register('Hash', () => new BcryptAdapter(10));
     container.register('Crypt', () => CryptAdapter.getInstance());
     container.register('JWT', () => JWTAdapter.getInstance(container.resolve<Crypt>('Crypt')));
-    container.register('Email', () => Resend.getInstance(container.resolve<Logger>('Logger')));
+    container.register('Email', () => SES.getInstance(container.resolve<Logger>('Logger')));
     container.register('Validator', () => new ValidatorJS());
 
     // Register Repositories

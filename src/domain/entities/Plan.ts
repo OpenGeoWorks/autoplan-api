@@ -1,7 +1,7 @@
 import { UserProps } from '@domain/entities/User';
 import { ProjectProps } from '@domain/entities/Project';
 import { CoordinateProps } from '@domain/entities/Coordinate';
-import { TraverseLegProps } from '@domain/entities/TraverseLeg';
+import { TraverseLeg, TraverseLegProps } from '@domain/entities/TraverseLeg';
 
 export enum PlanType {
     CADASTRAL = 'cadastral',
@@ -24,6 +24,8 @@ export enum BeaconType {
 export interface ParcelProps {
     name: string;
     ids: string[];
+    area?: number;
+    legs: TraverseLegProps[];
 }
 
 export interface PlanProps {
