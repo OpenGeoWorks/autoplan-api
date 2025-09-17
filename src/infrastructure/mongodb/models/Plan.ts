@@ -20,6 +20,17 @@ export const coordinateSchema = new Schema(
     },
 );
 
+export const elevationSchema = new Schema(
+    {
+        id: String,
+        elevation: Number,
+        chainage: String,
+    },
+    {
+        _id: false,
+    },
+);
+
 export const parcelSchema = new Schema(
     {
         name: String,
@@ -109,6 +120,10 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         coordinates: {
             type: [coordinateSchema],
+            default: [],
+        },
+        elevations: {
+            type: [elevationSchema],
             default: [],
         },
         parcels: {

@@ -16,6 +16,7 @@ export default (logger: Logger, authController: AuthController, planController: 
     router.get('/fetch/:plan_id', expressRouteAdapter(planController.fetchPlan.bind(planController)));
     router.put('/edit/:plan_id', expressRouteAdapter(planController.editPlan.bind(planController)));
     router.put('/coordinates/edit/:plan_id', expressRouteAdapter(planController.editCoordinates.bind(planController)));
+    router.put('/elevations/edit/:plan_id', expressRouteAdapter(planController.editElevations.bind(planController)));
     router.put('/parcels/edit/:plan_id', expressRouteAdapter(planController.editParcels.bind(planController)));
     router.delete('/delete/:plan_id', expressRouteAdapter(planController.deletePlan.bind(planController)));
     router.put(

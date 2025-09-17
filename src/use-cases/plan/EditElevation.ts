@@ -1,37 +1,37 @@
-import { CoordinateProps } from '@domain/entities/Coordinate';
+import { ElevationProps } from '@domain/entities/Elevation';
 import { Logger, RepoOptions } from '@domain/types/Common';
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
 import { Plan } from '@domain/entities/Plan';
 import NotFoundError from '@domain/errors/NotFoundError';
 
-export interface EditCoordinatesRequest {
+export interface EditElevationRequest {
     plan_id: string;
-    coordinates: CoordinateProps[];
+    elevations: ElevationProps[];
     options?: RepoOptions;
 }
 
-export class EditCoordinates {
+export class EditElevation {
     constructor(
         private readonly logger: Logger,
         private readonly planRepo: PlanRepositoryInterface,
     ) {}
 
-    async execute(data: EditCoordinatesRequest): Promise<Plan> {
+    async execute(data: EditElevationRequest): Promise<Plan> {
         this.logger.info('EditCoordinates', data);
 
-        // check for duplicate coordinates
+        // check for duplicate elevations
         const check: Record<string, boolean> = {};
-        const updatedCoordinates: CoordinateProps[] = [];
+        const updatedElevations: ElevationProps[] = [];
 
-        for (const coord of data.coordinates) {
-            if (!check[coord.id]) {
-                updatedCoordinates.push(coord);
+        for (const elev of data.elevations) {
+            if (!check[elev.id]) {
+                updatedElevations.push(elev);
             }
 
-            check[coord.id] = true;
+            check[elev.id] = true;
         }
 
-        const plan = await this.planRepo.editPlan(data.plan_id, { coordinates: updatedCoordinates }, data.options);
+        const plan = await this.planRepo.editPlan(data.plan_id, { elevations: updatedElevations }, data.options);
         if (!plan) {
             throw new NotFoundError('Plan not found');
         }

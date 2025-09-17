@@ -38,6 +38,25 @@ export class PlanValidator {
         return null;
     }
 
+    static validateEditElevations(data: any): Error | null {
+        const rules = {
+            elevations: 'required|array',
+            'elevations.*': {
+                id: 'required|string',
+                elevation: 'required|numeric',
+                chainage: 'string',
+            },
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
+
     static validateEditParcels(data: any): Error | null {
         const rules = {
             parcels: 'required|array',

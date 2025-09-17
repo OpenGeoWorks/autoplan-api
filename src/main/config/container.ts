@@ -46,6 +46,7 @@ import { EditTraverseComputation } from '@use-cases/plan/EditTraverseComputation
 import { EditForwardComputation } from '@use-cases/plan/EditForwardComputation';
 import { SES } from '@infra/ses/ses';
 import { GeneratePlan } from '@use-cases/plan/GeneratePlan';
+import { EditElevation } from '@use-cases/plan/EditElevation';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -244,6 +245,12 @@ export function setupContainer(): Container {
             container.resolve('BackComputationUseCase'),
         );
     });
+    container.register('EditElevationUseCase', () => {
+        return new EditElevation(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -296,6 +303,7 @@ export function setupContainer(): Container {
             container.resolve('EditTraverseComputationUseCase'),
             container.resolve('EditForwardComputationUseCase'),
             container.resolve('GeneratePlanUseCase'),
+            container.resolve('EditElevationUseCase'),
         );
     });
 

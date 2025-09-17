@@ -15,6 +15,7 @@ import { parseQuery } from '@adapters/controllers/helpers/query';
 import { EditTraverseComputation, EditTraverseComputationRequest } from '@use-cases/plan/EditTraverseComputation';
 import { EditForwardComputation, EditForwardComputationRequest } from '@use-cases/plan/EditForwardComputation';
 import { GeneratePlan, GeneratePlanResponse } from '@use-cases/plan/GeneratePlan';
+import { EditElevation, EditElevationRequest } from '@use-cases/plan/EditElevation';
 
 export class PlanController {
     constructor(
@@ -28,6 +29,7 @@ export class PlanController {
         private readonly editTraverseComputationUseCase: EditTraverseComputation,
         private readonly editForwardComputationUseCase: EditForwardComputation,
         private readonly generatePlanUseCase: GeneratePlan,
+        private readonly editElevationsUseCase: EditElevation,
     ) {}
 
     async createPlan(
@@ -81,6 +83,29 @@ export class PlanController {
             const plan = await this.editCoordinatesUseCase.execute({
                 plan_id: req.params!.plan_id,
                 coordinates: req.body!.coordinates,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editElevations(
+        req: HttpRequest<EditElevationRequest, { plan_id: string }, undefined, undefined, AuthenticateResponse>,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateEditElevations(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editElevationsUseCase.execute({
+                plan_id: req.params!.plan_id,
+                elevations: req.body!.elevations,
                 options: {
                     filter: { user: req.user!.id },
                 },

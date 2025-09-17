@@ -2,6 +2,7 @@ import { UserProps } from '@domain/entities/User';
 import { ProjectProps } from '@domain/entities/Project';
 import { CoordinateProps } from '@domain/entities/Coordinate';
 import { TraverseLeg, TraverseLegProps } from '@domain/entities/TraverseLeg';
+import { ElevationProps } from '@domain/entities/Elevation';
 
 export enum PlanType {
     CADASTRAL = 'cadastral',
@@ -45,6 +46,7 @@ export interface PlanProps {
     font?: string;
     font_size?: number;
     coordinates?: CoordinateProps[];
+    elevations?: ElevationProps[];
     parcels?: ParcelProps[];
     title?: string;
     address?: string;
@@ -81,6 +83,7 @@ export class Plan {
     public readonly font: string;
     public readonly font_size: number;
     public readonly coordinates: CoordinateProps[];
+    public readonly elevations: ElevationProps[];
     public readonly parcels: ParcelProps[];
     public readonly title: string;
     public readonly address: string;
@@ -116,6 +119,7 @@ export class Plan {
         this.font = props.font || 'Arial'; // Default to Arial if not provided
         this.font_size = props.font_size || 12; // Default to 3 if not provided
         this.coordinates = props.coordinates || [];
+        this.elevations = props.elevations || [];
         this.parcels = props.parcels || [];
         this.title = props.title || 'Untitled Plan'; // Default to Untitled Plan if not provided
         this.address = props.address || '';
