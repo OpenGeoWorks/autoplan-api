@@ -7,6 +7,7 @@ import userRoutes from '@main/routes/user-routes';
 import projectRoutes from '@main/routes/project-routes';
 import traverseRoutes from '@main/routes/traverse-routes';
 import planRoutes from '@main/routes/plan-routes';
+import levelingRoutes from '@main/routes/leveling-routes';
 
 export class App {
     private readonly app: Express;
@@ -84,6 +85,16 @@ export class App {
                 this.logger,
                 this.container.resolve('AuthController'),
                 this.container.resolve('TraverseController'),
+            ),
+        );
+
+        // Leveling Routes
+        apiRouter.use(
+            '/leveling',
+            levelingRoutes(
+                this.logger,
+                this.container.resolve('AuthController'),
+                this.container.resolve('LevelingController'),
             ),
         );
 
