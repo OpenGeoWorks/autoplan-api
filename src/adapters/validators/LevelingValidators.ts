@@ -13,6 +13,7 @@ export class LevelingValidator {
                 fore_sight: 'numeric',
                 reduced_level: 'numeric',
             },
+            misclosure_correction: 'boolean',
         };
 
         try {

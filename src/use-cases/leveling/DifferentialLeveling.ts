@@ -6,10 +6,13 @@ export interface DifferentialLevelingRequest {
     stations: LevelingStationProps[];
     method: 'rise-and-fall' | 'height-of-instrument';
     round?: boolean;
+    misclosure_correction?: boolean;
 }
 
 export interface DifferentialLevelingResponse {
     stations: LevelingStation[];
+    misclosure?: number;
+    number_of_networks?: number;
 }
 
 export class DifferentialLeveling {
@@ -24,11 +27,48 @@ export class DifferentialLeveling {
             stations = this.heightOfI(data.stations);
         }
 
-        if (data.round) {
-            stations.forEach(station => station.round());
+        let misclosure: number | undefined = undefined;
+        let noOfBacksights = 0;
+        if (data.stations[data.stations.length - 1].reduced_level !== undefined) {
+            const lastStation = stations[stations.length - 1];
+            misclosure = (lastStation.reduced_level! - data.stations[data.stations.length - 1].reduced_level!) * -1;
         }
 
-        return { stations };
+        for (const station of data.stations) {
+            if (station.back_sight !== undefined) {
+                noOfBacksights += 1;
+            }
+        }
+
+        if (data.misclosure_correction && misclosure) {
+            const quotient = misclosure / noOfBacksights;
+
+            let currentCorrection = 0;
+            let networkCount = 0;
+            for (let i = 0; i < stations.length; i++) {
+                if (i === 0) {
+                    stations[i].correction = 0;
+                    continue;
+                }
+
+                // check if the previous station had a back sight || fore sight
+                if (data.stations[i - 1].back_sight !== undefined || data.stations[i - 1].fore_sight !== undefined) {
+                    networkCount += 1;
+                    currentCorrection = networkCount * quotient;
+                }
+
+                stations[i].correction = currentCorrection;
+                stations[i].reduced_level = stations[i].reduced_level! + currentCorrection;
+            }
+            misclosure = 0;
+        }
+
+        if (data.round) {
+            stations.forEach(station => station.round());
+            misclosure = misclosure ? Math.round(misclosure * 1000) / 1000 : misclosure;
+        }
+
+        return { stations, misclosure, number_of_networks: noOfBacksights };
     }
 
     riseAndFall(stations: LevelingStationProps[]): LevelingStation[] {
@@ -105,7 +145,7 @@ export class DifferentialLeveling {
                 break;
             }
 
-            const nextStationData = stations[i + 1];
+            const nextStationData = { ...stations[i + 1] };
 
             if (stations[i + 1].intermediate_sight !== undefined) {
                 nextStationData.reduced_level = currentHI! - stations[i + 1].intermediate_sight!;

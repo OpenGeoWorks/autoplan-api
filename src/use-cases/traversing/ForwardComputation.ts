@@ -24,6 +24,8 @@ export interface ForwardComputationResponse {
             max_easting: number;
         };
     };
+    northing_misclosure?: number;
+    easting_misclosure?: number;
 }
 
 export class ForwardComputation {
@@ -101,22 +103,24 @@ export class ForwardComputation {
             totalDistance += leg.distance;
         }
 
-        // account for error
-        if (
-            data.misclosure_correction &&
-            data.coordinates.some(coord => coord.id === data.legs[data.legs.length - 1].to.id)
-        ) {
+        let northingMisclosure: number | undefined = undefined;
+        let eastingMisclosure: number | undefined = undefined;
+        let knownPoint = null;
+        if (data.coordinates.some(coord => coord.id === data.legs[data.legs.length - 1].to.id)) {
             const lastLeg = computedLegs[computedLegs.length - 1].to;
-            const knownPoint = data.coordinates.find(coord => coord.id === lastLeg.id);
+            knownPoint = data.coordinates.find(coord => coord.id === lastLeg.id);
 
             if (!knownPoint) {
                 throw new BadRequestError('Something went wrong');
             }
 
             // calculate misclosures
-            const northingMisclosure = (lastLeg.northing - knownPoint.northing) * -1;
-            const eastingMisclosure = (lastLeg.easting - knownPoint.easting) * -1;
+            northingMisclosure = (lastLeg.northing - knownPoint.northing) * -1;
+            eastingMisclosure = (lastLeg.easting - knownPoint.easting) * -1;
+        }
 
+        // account for error
+        if (data.misclosure_correction && northingMisclosure !== undefined && eastingMisclosure !== undefined) {
             const northingQuotient =
                 northingMisclosure / computedLegs[computedLegs.length - 1].arithmetic_sum_northing!;
             const eastingQuotient = eastingMisclosure / computedLegs[computedLegs.length - 1].arithmetic_sum_easting!;
@@ -135,7 +139,9 @@ export class ForwardComputation {
                 }
             }
 
-            computedLegs[computedLegs.length - 1].to = knownPoint;
+            computedLegs[computedLegs.length - 1].to = knownPoint as CoordinateProps;
+            northingMisclosure = 0;
+            eastingMisclosure = 0;
         }
 
         // Calculate bounding box
@@ -152,6 +158,13 @@ export class ForwardComputation {
             },
         };
 
+        if (data.round) {
+            northingMisclosure =
+                northingMisclosure !== undefined ? Math.round(northingMisclosure * 1000) / 1000 : undefined;
+            eastingMisclosure =
+                eastingMisclosure !== undefined ? Math.round(eastingMisclosure * 1000) / 1000 : undefined;
+        }
+
         return {
             start: new Coordinate(data.start),
             computed_legs: computedLegs.map(leg => {
@@ -164,6 +177,8 @@ export class ForwardComputation {
                 return traverse;
             }),
             traverse,
+            northing_misclosure: northingMisclosure,
+            easting_misclosure: eastingMisclosure,
         };
     }
 }

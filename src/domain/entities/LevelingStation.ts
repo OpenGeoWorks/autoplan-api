@@ -9,7 +9,6 @@ export interface LevelingStationProps {
     fall?: number;
     height_of_instrument?: number;
     correction?: number;
-    corrected_rl?: number;
 }
 
 export class LevelingStation {
@@ -23,7 +22,6 @@ export class LevelingStation {
     public fall?: number;
     public height_of_instrument?: number;
     public correction?: number;
-    public corrected_rl?: number;
 
     constructor(props: LevelingStationProps) {
         this.id = props.id;
@@ -36,7 +34,6 @@ export class LevelingStation {
         this.fall = props.fall;
         this.height_of_instrument = props.height_of_instrument;
         this.correction = props.correction;
-        this.corrected_rl = props.corrected_rl;
     }
 
     round() {
@@ -68,12 +65,8 @@ export class LevelingStation {
             this.height_of_instrument = Math.round(this.height_of_instrument * 1000) / 1000;
         }
 
-        // if (this.correction !== undefined) {
-        //     this.correction = Math.round(this.correction * 1000) / 1000;
-        // }
-
-        if (this.corrected_rl !== undefined) {
-            this.corrected_rl = Math.round(this.corrected_rl * 1000) / 1000;
+        if (this.correction !== undefined) {
+            this.correction = Math.round(this.correction * 1000) / 1000;
         }
     }
 }

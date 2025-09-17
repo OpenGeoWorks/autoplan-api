@@ -15,6 +15,8 @@ export interface TraverseComputationRequest {
 
 export interface TraverseComputationResponse {
     traverse_legs: TraverseLeg[];
+    northing_misclosure?: number;
+    easting_misclosure?: number;
 }
 
 export class TraverseComputation {
@@ -219,6 +221,8 @@ export class TraverseComputation {
 
         return {
             traverse_legs: result,
+            northing_misclosure: forwardComputationResult.northing_misclosure,
+            easting_misclosure: forwardComputationResult.easting_misclosure,
         };
     }
 }
