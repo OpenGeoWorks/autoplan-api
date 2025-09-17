@@ -1,6 +1,6 @@
 export interface LevelingStationProps {
-    id?: string;
     stn: string;
+    chainage?: string;
     back_sight?: number;
     intermediate_sight?: number;
     fore_sight?: number;
@@ -12,8 +12,8 @@ export interface LevelingStationProps {
 }
 
 export class LevelingStation {
-    public id?: string;
     public stn: string;
+    public chainage?: string;
     public back_sight?: number;
     public intermediate_sight?: number;
     public fore_sight?: number;
@@ -24,8 +24,8 @@ export class LevelingStation {
     public correction?: number;
 
     constructor(props: LevelingStationProps) {
-        this.id = props.id;
         this.stn = props.stn;
+        this.chainage = props.chainage;
         this.back_sight = props.back_sight;
         this.intermediate_sight = props.intermediate_sight;
         this.fore_sight = props.fore_sight;

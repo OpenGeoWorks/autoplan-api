@@ -3,6 +3,7 @@ import { ProjectProps } from '@domain/entities/Project';
 import { CoordinateProps } from '@domain/entities/Coordinate';
 import { TraverseLeg, TraverseLegProps } from '@domain/entities/TraverseLeg';
 import { ElevationProps } from '@domain/entities/Elevation';
+import { LevelingStationProps } from '@domain/entities/LevelingStation';
 
 export enum PlanType {
     CADASTRAL = 'cadastral',
@@ -69,6 +70,11 @@ export interface PlanProps {
         legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
         misclosure_correction?: boolean;
     };
+    differential_leveling_data?: {
+        stations: LevelingStationProps[];
+        method: 'rise-and-fall' | 'height-of-instrument';
+        misclosure_correction?: boolean;
+    };
     page_size?: PageSize;
 }
 
@@ -106,6 +112,12 @@ export class Plan {
         legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
         misclosure_correction?: boolean;
     };
+    public readonly differential_leveling_data?: {
+        stations: LevelingStationProps[];
+        method: 'rise-and-fall' | 'height-of-instrument';
+        misclosure_correction?: boolean;
+    };
+
     public readonly page_size?: PageSize;
 
     constructor(props: PlanProps) {
@@ -134,6 +146,7 @@ export class Plan {
         this.forward_computation_data = props.forward_computation_data;
         this.traverse_computation_data = props.traverse_computation_data;
         this.page_size = props.page_size || PageSize.A4;
+        this.differential_leveling_data = props.differential_leveling_data;
     }
 }
 
