@@ -16,6 +16,7 @@ import { EditTraverseComputation, EditTraverseComputationRequest } from '@use-ca
 import { EditForwardComputation, EditForwardComputationRequest } from '@use-cases/plan/EditForwardComputation';
 import { GeneratePlan, GeneratePlanResponse } from '@use-cases/plan/GeneratePlan';
 import { EditElevation, EditElevationRequest } from '@use-cases/plan/EditElevation';
+import { EditDifferentialLeveling, EditDifferentialLevelingRequest } from '@use-cases/plan/EditDifferentialLeveling';
 
 export class PlanController {
     constructor(
@@ -30,6 +31,7 @@ export class PlanController {
         private readonly editForwardComputationUseCase: EditForwardComputation,
         private readonly generatePlanUseCase: GeneratePlan,
         private readonly editElevationsUseCase: EditElevation,
+        private readonly editDifferentialLevelingUseCase: EditDifferentialLeveling,
     ) {}
 
     async createPlan(
@@ -187,6 +189,35 @@ export class PlanController {
             const plan = await this.editForwardComputationUseCase.execute({
                 plan_id: req.params!.plan_id,
                 forward_data: req.body!,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editDifferentialLeveling(
+        req: HttpRequest<
+            EditDifferentialLevelingRequest['leveling_data'],
+            { plan_id: string },
+            undefined,
+            undefined,
+            AuthenticateResponse
+        >,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateDifferentialLevelingData(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editDifferentialLevelingUseCase.execute({
+                plan_id: req.params!.plan_id,
+                leveling_data: req.body!,
                 options: {
                     filter: { user: req.user!.id },
                 },

@@ -66,6 +66,24 @@ export const traverseLegSchema = new Schema(
     },
 );
 
+export const levelingStationSchema = new Schema(
+    {
+        stn: String,
+        chainage: String,
+        back_sight: Number,
+        intermediate_sight: Number,
+        fore_sight: Number,
+        reduced_level: Number,
+        rise: Number,
+        fall: Number,
+        height_of_instrument: Number,
+        correction: Number,
+    },
+    {
+        _id: false,
+    },
+);
+
 export const forwardComputationSchema = new Schema(
     {
         coordinates: [coordinateSchema],
@@ -82,6 +100,20 @@ export const traverseComputationSchema = new Schema(
     {
         coordinates: [coordinateSchema],
         legs: [traverseLegSchema],
+        misclosure_correction: Boolean,
+    },
+    {
+        _id: false,
+    },
+);
+
+export const differentialLevelingSchema = new Schema(
+    {
+        stations: [levelingStationSchema],
+        method: {
+            type: String,
+            enum: ['rise-and-fall', 'height-of-instrument'],
+        },
         misclosure_correction: Boolean,
     },
     {
@@ -177,6 +209,9 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         traverse_computation_data: {
             type: traverseComputationSchema,
+        },
+        differential_leveling_data: {
+            type: differentialLevelingSchema,
         },
         page_size: {
             type: String,

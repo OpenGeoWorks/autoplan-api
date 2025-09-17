@@ -49,6 +49,7 @@ import { GeneratePlan } from '@use-cases/plan/GeneratePlan';
 import { EditElevation } from '@use-cases/plan/EditElevation';
 import { DifferentialLeveling } from '@use-cases/leveling/DifferentialLeveling';
 import { LevelingController } from '@adapters/controllers/LevelingController';
+import { EditDifferentialLeveling } from '@use-cases/plan/EditDifferentialLeveling';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -240,6 +241,12 @@ export function setupContainer(): Container {
             container.resolve<PlanRepositoryInterface>('PlanRepo'),
         );
     });
+    container.register('EditDifferentialLevelingUseCase', () => {
+        return new EditDifferentialLeveling(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
     container.register('GeneratePlanUseCase', () => {
         return new GeneratePlan(
             container.resolve<Logger>('Logger'),
@@ -313,6 +320,7 @@ export function setupContainer(): Container {
             container.resolve('EditForwardComputationUseCase'),
             container.resolve('GeneratePlanUseCase'),
             container.resolve('EditElevationUseCase'),
+            container.resolve('EditDifferentialLevelingUseCase'),
         );
     });
 
