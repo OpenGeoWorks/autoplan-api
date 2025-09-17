@@ -1,6 +1,7 @@
 import { Plan, PlanProps } from '@domain/entities/Plan';
 import { Logger, RepoOptions } from '@domain/types/Common';
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
+import NotFoundError from '@domain/errors/NotFoundError';
 
 export interface EditPlanRequest {
     plan_id: string;
@@ -19,7 +20,7 @@ export class EditPlan {
 
         const plan = await this.planRepo.editPlan(data.plan_id, data.plan, data.options);
         if (!plan) {
-            throw new Error('Plan not found');
+            throw new NotFoundError('Plan not found');
         }
 
         return plan;

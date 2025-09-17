@@ -26,6 +26,7 @@ export default (logger: Logger, authController: AuthController, planController: 
         '/forward-data/edit/:plan_id',
         expressRouteAdapter(planController.editForwardComputation.bind(planController)),
     );
+    router.get('/generate/:plan_id', expressRouteAdapter(planController.generatePlan.bind(planController)));
 
     return router;
 };

@@ -14,6 +14,7 @@ import { PlanValidator } from '@adapters/validators/PlanValidator';
 import { parseQuery } from '@adapters/controllers/helpers/query';
 import { EditTraverseComputation, EditTraverseComputationRequest } from '@use-cases/plan/EditTraverseComputation';
 import { EditForwardComputation, EditForwardComputationRequest } from '@use-cases/plan/EditForwardComputation';
+import { GeneratePlan, GeneratePlanResponse } from '@use-cases/plan/GeneratePlan';
 
 export class PlanController {
     constructor(
@@ -26,6 +27,7 @@ export class PlanController {
         private readonly editPlanUseCase: EditPlan,
         private readonly editTraverseComputationUseCase: EditTraverseComputation,
         private readonly editForwardComputationUseCase: EditForwardComputation,
+        private readonly generatePlanUseCase: GeneratePlan,
     ) {}
 
     async createPlan(
@@ -223,6 +225,23 @@ export class PlanController {
             }
 
             return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async generatePlan(
+        req: HttpRequest<undefined, { plan_id: string }, undefined, undefined, AuthenticateResponse>,
+    ): Promise<HttpResponse<GeneratePlanResponse | Error>> {
+        try {
+            const res = await this.generatePlanUseCase.execute({
+                plan_id: req.params!.plan_id,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return success(res);
         } catch (e) {
             return handleError(e);
         }

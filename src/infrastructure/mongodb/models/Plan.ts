@@ -1,5 +1,5 @@
 import { Document, Schema, Model, model } from 'mongoose';
-import { BeaconType, PlanOrigin, PlanProps, PlanType } from '@domain/entities/Plan';
+import { BeaconType, PageSize, PlanOrigin, PlanProps, PlanType } from '@domain/entities/Plan';
 
 export interface PlanDocument extends Document, PlanProps {
     id: string;
@@ -162,6 +162,11 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         traverse_computation_data: {
             type: traverseComputationSchema,
+        },
+        page_size: {
+            type: String,
+            enum: Object.values(PageSize),
+            default: PageSize.A4,
         },
         deleted: {
             type: Boolean,

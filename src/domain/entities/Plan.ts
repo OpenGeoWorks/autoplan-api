@@ -21,6 +21,12 @@ export enum BeaconType {
     NONE = 'none',
 }
 
+export enum PageSize {
+    A4 = 'A4',
+    A3 = 'A3',
+    A2 = 'A2',
+}
+
 export interface ParcelProps {
     name: string;
     ids: string[];
@@ -61,6 +67,7 @@ export interface PlanProps {
         legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
         misclosure_correction?: boolean;
     };
+    page_size?: PageSize;
 }
 
 export class Plan {
@@ -96,6 +103,7 @@ export class Plan {
         legs: Pick<TraverseLegProps, 'from' | 'to' | 'observed_angle' | 'distance'>[];
         misclosure_correction?: boolean;
     };
+    public readonly page_size?: PageSize;
 
     constructor(props: PlanProps) {
         this.id = props.id;
@@ -121,6 +129,7 @@ export class Plan {
         this.surveyor_name = props.surveyor_name || '';
         this.forward_computation_data = props.forward_computation_data;
         this.traverse_computation_data = props.traverse_computation_data;
+        this.page_size = props.page_size || PageSize.A4;
     }
 }
 

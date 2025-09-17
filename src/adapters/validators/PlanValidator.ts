@@ -1,4 +1,4 @@
-import { BeaconType, PlanOrigin, PlanType } from '@domain/entities/Plan';
+import { BeaconType, PageSize, PlanOrigin, PlanType } from '@domain/entities/Plan';
 import validator from '@infra/validatorjs/validator';
 
 export class PlanValidator {
@@ -150,6 +150,7 @@ export class PlanValidator {
             beacon_type: `in:${Object.values(BeaconType)}`,
             personel_name: 'string',
             surveyor_name: 'string',
+            page_size: `string|in${Object.values(PageSize)}`,
         };
 
         try {
