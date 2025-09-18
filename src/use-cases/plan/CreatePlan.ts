@@ -44,6 +44,7 @@ export class CreatePlan {
             page_size: PageSize.A4,
             page_orientation: PageOrientation.PORTRAIT,
             title: 'Untitled Plan',
+            notes: [],
         };
 
         if (planData.type === PlanType.TOPOGRAPHIC) {
