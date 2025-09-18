@@ -1,4 +1,4 @@
-import { Plan, PlanProps } from '@domain/entities/Plan';
+import { BeaconType, PageOrientation, PageSize, Plan, PlanOrigin, PlanProps, PlanType } from '@domain/entities/Plan';
 import { Logger, RepoOptions } from '@domain/types/Common';
 import { ProjectRepositoryInterface } from '@domain/interfaces/repositories/ProjectRepositoryInterface';
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
@@ -25,8 +25,7 @@ export class CreatePlan {
             throw new NotFoundError('Project not found');
         }
 
-        // create plan
-        return await this.planRepo.createPlan({
+        const planData: Omit<PlanProps, 'id' | 'created_at' | 'updated_at'> = {
             user: project.user,
             project: project.id,
             name: data.plan.name,
@@ -35,6 +34,36 @@ export class CreatePlan {
             local_govt: project.location?.city,
             state: project.location?.state,
             surveyor_name: project.surveyor?.name,
-        });
+            font: 'Arial',
+            font_size: 12,
+            origin: PlanOrigin.UTM_ZONE_31,
+            scale: 1000,
+            beacon_type: BeaconType.BOX,
+            beacon_size: 0.3,
+            label_size: 0.2,
+            page_size: PageSize.A4,
+            page_orientation: PageOrientation.PORTRAIT,
+            title: 'Untitled Plan',
+        };
+
+        if (planData.type === PlanType.TOPOGRAPHIC) {
+            planData.topographic_setting = {
+                show_spot_heights: true,
+                point_label_scale: 0.2,
+                show_contours: true,
+                contour_interval: 1,
+                major_contour: 5,
+                minimum_distance: 0.1,
+                show_contours_labels: true,
+                contour_label_scale: 0.5,
+                show_boundary: true,
+                boundary_label_scale: 0.2,
+                tin: false,
+                grid: false,
+            };
+        }
+
+        // create plan
+        return await this.planRepo.createPlan(planData);
     }
 }

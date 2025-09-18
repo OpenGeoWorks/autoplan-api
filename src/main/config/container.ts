@@ -50,6 +50,8 @@ import { EditElevation } from '@use-cases/plan/EditElevation';
 import { DifferentialLeveling } from '@use-cases/leveling/DifferentialLeveling';
 import { LevelingController } from '@adapters/controllers/LevelingController';
 import { EditDifferentialLeveling } from '@use-cases/plan/EditDifferentialLeveling';
+import { EditTopoBoundary } from '@use-cases/plan/EditTopoBoundary';
+import { EditTopoSetting } from '@use-cases/plan/EditTopoSetting';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -247,6 +249,18 @@ export function setupContainer(): Container {
             container.resolve<PlanRepositoryInterface>('PlanRepo'),
         );
     });
+    container.register('EditTopoBoundaryUseCase', () => {
+        return new EditTopoBoundary(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
+    container.register('EditTopoSettingUseCase', () => {
+        return new EditTopoSetting(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
     container.register('GeneratePlanUseCase', () => {
         return new GeneratePlan(
             container.resolve<Logger>('Logger'),
@@ -321,6 +335,8 @@ export function setupContainer(): Container {
             container.resolve('GeneratePlanUseCase'),
             container.resolve('EditElevationUseCase'),
             container.resolve('EditDifferentialLevelingUseCase'),
+            container.resolve('EditTopoBoundaryUseCase'),
+            container.resolve('EditTopoSettingUseCase'),
         );
     });
 

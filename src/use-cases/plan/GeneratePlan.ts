@@ -3,6 +3,7 @@ import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRep
 import NotFoundError from '@domain/errors/NotFoundError';
 import { CoordinateProps } from '@domain/entities/Coordinate';
 import { BackComputation } from '@use-cases/traversing/BackComputation';
+import BadRequestError from '@domain/errors/BadRequestError';
 
 export interface GeneratePlanRequest {
     plan_id: string;
@@ -31,14 +32,14 @@ export class GeneratePlan {
         // create a map of coordinates
         const coordinateMap: Record<string, CoordinateProps> = {};
 
-        for (let i = 0; i < plan.coordinates.length; i++) {
-            coordinateMap[plan.coordinates[i].id] = plan.coordinates[i];
+        for (let i = 0; i < plan.coordinates!.length; i++) {
+            coordinateMap[plan.coordinates![i].id] = plan.coordinates![i];
         }
 
-        for (let i = 0; i < plan.parcels.length; i++) {
+        for (let i = 0; i < plan.parcels!.length; i++) {
             const points: CoordinateProps[] = [];
-            for (let j = 0; j < plan.parcels[i].ids.length; j++) {
-                const point = coordinateMap[plan.parcels[i].ids[j]];
+            for (let j = 0; j < plan.parcels![i].ids.length; j++) {
+                const point = coordinateMap[plan.parcels![i].ids[j]];
                 if (point) {
                     points.push(point);
                 }
@@ -51,8 +52,8 @@ export class GeneratePlan {
                 round: true,
             });
 
-            plan.parcels[i].legs = backComputationResult.traverse_legs;
-            plan.parcels[i].area = backComputationResult.traverse.area;
+            plan.parcels![i].legs = backComputationResult.traverse_legs;
+            plan.parcels![i].area = backComputationResult.traverse.area;
         }
 
         // call python server to generate plan
@@ -66,7 +67,7 @@ export class GeneratePlan {
         });
 
         if (!response.ok) {
-            throw new Error('Failed to generate plan');
+            throw new BadRequestError('Failed to generate plan');
         }
 
         const responseData = await response.json();

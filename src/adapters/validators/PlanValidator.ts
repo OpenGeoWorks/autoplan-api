@@ -1,4 +1,4 @@
-import { BeaconType, PageSize, PlanOrigin, PlanType } from '@domain/entities/Plan';
+import { BeaconType, PageOrientation, PageSize, PlanOrigin, PlanType } from '@domain/entities/Plan';
 import validator from '@infra/validatorjs/validator';
 
 export class PlanValidator {
@@ -46,6 +46,51 @@ export class PlanValidator {
                 elevation: 'required|numeric',
                 chainage: 'string',
             },
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
+
+    static validateEditTopoBoundary(data: any): Error | null {
+        const rules = {
+            coordinates: 'required|array',
+            'coordinates.*': {
+                id: 'required|string',
+                northing: 'required|numeric',
+                easting: 'required|numeric',
+                elevation: 'required|numeric',
+            },
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
+
+    static validateEditTopoSetting(data: any): Error | null {
+        const rules = {
+            show_spot_heights: 'boolean',
+            point_label_scale: 'numeric',
+            show_contours: 'boolean',
+            contour_interval: 'numeric',
+            major_contour: 'numeric',
+            minimum_distance: 'numeric|min:0.1|max:0.5',
+            show_contours_labels: 'boolean',
+            contour_label_scale: 'numeric',
+            show_boundary: 'boolean',
+            boundary_label_scale: 'numeric',
+            tin: 'boolean',
+            grid: 'boolean',
         };
 
         try {
@@ -191,9 +236,12 @@ export class PlanValidator {
             origin: `string|in:${Object.values(PlanOrigin)}`,
             scale: 'numeric',
             beacon_type: `in:${Object.values(BeaconType)}`,
+            beacon_size: 'numeric',
+            label_size: 'numeric',
             personel_name: 'string',
             surveyor_name: 'string',
-            page_size: `string|in${Object.values(PageSize)}`,
+            page_size: `string|in:${Object.values(PageSize)}`,
+            page_orientation: `string|in:${Object.values(PageOrientation)}`,
         };
 
         try {

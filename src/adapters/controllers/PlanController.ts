@@ -8,7 +8,7 @@ import { EditPlan, EditPlanRequest } from '@use-cases/plan/EditPlan';
 import { HttpRequest } from '@adapters/controllers/interfaces/HttpRequest';
 import { AuthenticateResponse } from '@use-cases/auth/Authenticate';
 import { HttpResponse } from '@adapters/controllers/interfaces/HttpResponse';
-import { Plan } from '@domain/entities/Plan';
+import { BeaconType, PageOrientation, PageSize, Plan, PlanOrigin } from '@domain/entities/Plan';
 import { badRequest, handleError, noContent, notFound, success } from '@adapters/controllers/helpers/http';
 import { PlanValidator } from '@adapters/validators/PlanValidator';
 import { parseQuery } from '@adapters/controllers/helpers/query';
@@ -17,6 +17,8 @@ import { EditForwardComputation, EditForwardComputationRequest } from '@use-case
 import { GeneratePlan, GeneratePlanResponse } from '@use-cases/plan/GeneratePlan';
 import { EditElevation, EditElevationRequest } from '@use-cases/plan/EditElevation';
 import { EditDifferentialLeveling, EditDifferentialLevelingRequest } from '@use-cases/plan/EditDifferentialLeveling';
+import { EditTopoBoundary, EditTopoBoundaryRequest } from '@use-cases/plan/EditTopoBoundary';
+import { EditTopoSetting, EditTopoSettingRequest } from '@use-cases/plan/EditTopoSetting';
 
 export class PlanController {
     constructor(
@@ -32,6 +34,8 @@ export class PlanController {
         private readonly generatePlanUseCase: GeneratePlan,
         private readonly editElevationsUseCase: EditElevation,
         private readonly editDifferentialLevelingUseCase: EditDifferentialLeveling,
+        private readonly editTopoBoundaryUseCase: EditTopoBoundary,
+        private readonly editTopoSettingUseCase: EditTopoSetting,
     ) {}
 
     async createPlan(
@@ -87,6 +91,11 @@ export class PlanController {
                 coordinates: req.body!.coordinates,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        coordinates: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -110,6 +119,11 @@ export class PlanController {
                 elevations: req.body!.elevations,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        elevations: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -133,6 +147,11 @@ export class PlanController {
                 parcels: req.body!.parcels,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        parcels: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -162,6 +181,11 @@ export class PlanController {
                 traverse_data: req.body!,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        traverse_computation_data: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -191,6 +215,11 @@ export class PlanController {
                 forward_data: req.body!,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        forward_computation_data: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -220,6 +249,11 @@ export class PlanController {
                 leveling_data: req.body!,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        differential_leveling_data: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -243,6 +277,27 @@ export class PlanController {
                 plan: req.body!,
                 options: {
                     filter: { user: req.user!.id },
+                    projection: {
+                        name: 1,
+                        font: 1,
+                        font_size: 1,
+                        title: 1,
+                        address: 1,
+                        local_govt: 1,
+                        state: 1,
+                        plan_number: 1,
+                        origin: 1,
+                        scale: 1,
+                        beacon_type: 1,
+                        beacon_size: 1,
+                        label_size: 1,
+                        personel_name: 1,
+                        surveyor_name: 1,
+                        page_size: 1,
+                        page_orientation: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
                 },
             });
 
@@ -259,6 +314,13 @@ export class PlanController {
             const repoOptions: RepoOptions = parseQuery(req.query!, ['type'], ['created_at', 'updated_at']);
             repoOptions.filter = repoOptions.filter ?? {};
             repoOptions.filter['user'] = req.user!.id;
+            repoOptions.projection = {
+                id: 1,
+                name: 1,
+                type: 1,
+                created_at: 1,
+                updated_at: 1,
+            };
 
             const plans = await this.planRepo.listPlans(req.params!.project_id, repoOptions);
 
@@ -298,6 +360,74 @@ export class PlanController {
             });
 
             return success(res);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editTopoBoundary(
+        req: HttpRequest<
+            EditTopoBoundaryRequest['boundary'],
+            { plan_id: string },
+            undefined,
+            undefined,
+            AuthenticateResponse
+        >,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateEditTopoBoundary(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editTopoBoundaryUseCase.execute({
+                plan_id: req.params!.plan_id,
+                boundary: req.body!,
+                options: {
+                    filter: { user: req.user!.id },
+                    projection: {
+                        topographic_boundary: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
+                },
+            });
+
+            return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editTopoSetting(
+        req: HttpRequest<
+            EditTopoSettingRequest['setting'],
+            { plan_id: string },
+            undefined,
+            undefined,
+            AuthenticateResponse
+        >,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateEditTopoSetting(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editTopoSettingUseCase.execute({
+                plan_id: req.params!.plan_id,
+                setting: req.body!,
+                options: {
+                    filter: { user: req.user!.id },
+                    projection: {
+                        topographic_setting: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
+                },
+            });
+
+            return success(plan);
         } catch (e) {
             return handleError(e);
         }

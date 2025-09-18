@@ -18,6 +18,11 @@ export default (logger: Logger, authController: AuthController, planController: 
     router.put('/coordinates/edit/:plan_id', expressRouteAdapter(planController.editCoordinates.bind(planController)));
     router.put('/elevations/edit/:plan_id', expressRouteAdapter(planController.editElevations.bind(planController)));
     router.put('/parcels/edit/:plan_id', expressRouteAdapter(planController.editParcels.bind(planController)));
+    router.put(
+        '/topo/boundary/edit/:plan_id',
+        expressRouteAdapter(planController.editTopoBoundary.bind(planController)),
+    );
+    router.put('/topo/setting/edit/:plan_id', expressRouteAdapter(planController.editTopoSetting.bind(planController)));
     router.delete('/delete/:plan_id', expressRouteAdapter(planController.deletePlan.bind(planController)));
     router.put(
         '/traverse-data/edit/:plan_id',

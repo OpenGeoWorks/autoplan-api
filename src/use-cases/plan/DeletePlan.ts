@@ -1,5 +1,6 @@
 import { Logger, RepoOptions } from '@domain/types/Common';
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
+import NotFoundError from '@domain/errors/NotFoundError';
 
 export interface DeletePlanRequest {
     id: string;
@@ -17,7 +18,7 @@ export class DeletePlan {
 
         const plan = await this.planRepo.deletePlan(data.id, data.options);
         if (!plan) {
-            throw new Error('Plan not found');
+            throw new NotFoundError('Plan not found');
         }
     }
 }

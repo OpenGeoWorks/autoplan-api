@@ -1,5 +1,5 @@
 import { Document, Schema, Model, model } from 'mongoose';
-import { BeaconType, PageSize, PlanOrigin, PlanProps, PlanType } from '@domain/entities/Plan';
+import { BeaconType, PageOrientation, PageSize, PlanOrigin, PlanProps, PlanType } from '@domain/entities/Plan';
 
 export interface PlanDocument extends Document, PlanProps {
     id: string;
@@ -121,6 +121,36 @@ export const differentialLevelingSchema = new Schema(
     },
 );
 
+export const topographicBoundarySchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        area: Number,
+    },
+    {
+        _id: false,
+    },
+);
+
+export const topographicSettingSchema = new Schema(
+    {
+        show_spot_heights: Boolean,
+        point_label_scale: Number,
+        show_contours: Boolean,
+        contour_interval: Number,
+        major_contour: Number,
+        minimum_distance: Number, // 0.1 to 0.5
+        show_contours_labels: Boolean,
+        contour_label_scale: Number,
+        show_boundary: Boolean,
+        boundary_label_scale: Number,
+        tin: Boolean,
+        grid: Boolean,
+    },
+    {
+        _id: false,
+    },
+);
+
 const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
     {
         user: {
@@ -189,12 +219,20 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         scale: {
             type: Number,
-            default: 1,
+            default: 1000,
         },
         beacon_type: {
             type: String,
             enum: Object.values(BeaconType),
             default: BeaconType.NONE,
+        },
+        beacon_size: {
+            type: Number,
+            default: 0.3,
+        },
+        label_size: {
+            type: Number,
+            default: 0.2,
         },
         personel_name: {
             type: String,
@@ -217,6 +255,17 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
             type: String,
             enum: Object.values(PageSize),
             default: PageSize.A4,
+        },
+        page_orientation: {
+            type: String,
+            enum: Object.values(PageOrientation),
+            default: PageOrientation.PORTRAIT,
+        },
+        topographic_boundary: {
+            type: topographicBoundarySchema,
+        },
+        topographic_setting: {
+            type: topographicSettingSchema,
         },
         deleted: {
             type: Boolean,

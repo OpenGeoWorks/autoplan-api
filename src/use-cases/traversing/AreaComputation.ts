@@ -1,5 +1,6 @@
 import { CoordinateProps } from '@domain/entities/Coordinate';
 import { Logger } from '@domain/types/Common';
+import BadRequestError from '@domain/errors/BadRequestError';
 
 export interface AreaComputationRequest {
     points: CoordinateProps[];
@@ -18,7 +19,7 @@ export class AreaComputation {
 
         // check length of points
         if (data.points.length < 3) {
-            throw new Error('At least 3 points are required to compute area');
+            throw new BadRequestError('At least 3 points are required to compute area');
         }
 
         if (data.points[0].id !== data.points[data.points.length - 1].id) {
