@@ -295,6 +295,7 @@ export class PlanController {
                         surveyor_name: 1,
                         page_size: 1,
                         page_orientation: 1,
+                        notes: 1,
                         created_at: 1,
                         updated_at: 1,
                     },
