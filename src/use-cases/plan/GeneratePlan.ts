@@ -4,6 +4,7 @@ import NotFoundError from '@domain/errors/NotFoundError';
 import { CoordinateProps } from '@domain/entities/Coordinate';
 import { BackComputation } from '@use-cases/traversing/BackComputation';
 import BadRequestError from '@domain/errors/BadRequestError';
+import { PlanType } from '@domain/entities/Plan';
 
 export interface GeneratePlanRequest {
     plan_id: string;
@@ -29,31 +30,45 @@ export class GeneratePlan {
             throw new NotFoundError('Plan not found');
         }
 
-        // create a map of coordinates
-        const coordinateMap: Record<string, CoordinateProps> = {};
+        if (plan.type === PlanType.CADASTRAL && plan.parcels) {
+            // create a map of coordinates
+            const coordinateMap: Record<string, CoordinateProps> = {};
 
-        for (let i = 0; i < plan.coordinates!.length; i++) {
-            coordinateMap[plan.coordinates![i].id] = plan.coordinates![i];
-        }
-
-        for (let i = 0; i < plan.parcels!.length; i++) {
-            const points: CoordinateProps[] = [];
-            for (let j = 0; j < plan.parcels![i].ids.length; j++) {
-                const point = coordinateMap[plan.parcels![i].ids[j]];
-                if (point) {
-                    points.push(point);
-                }
+            for (let i = 0; i < plan.coordinates!.length; i++) {
+                coordinateMap[plan.coordinates![i].id] = plan.coordinates![i];
             }
 
+            for (let i = 0; i < plan.parcels!.length; i++) {
+                const points: CoordinateProps[] = [];
+                for (let j = 0; j < plan.parcels![i].ids.length; j++) {
+                    const point = coordinateMap[plan.parcels![i].ids[j]];
+                    if (point) {
+                        points.push(point);
+                    }
+                }
+
+                // compute back computation
+                const backComputationResult = this.backComputation.execute({
+                    points: points,
+                    area: true,
+                    round: true,
+                });
+
+                plan.parcels![i].legs = backComputationResult.traverse_legs;
+                plan.parcels![i].area = backComputationResult.traverse.area;
+            }
+        }
+
+        if (plan.type === PlanType.TOPOGRAPHIC && plan.topographic_boundary) {
             // compute back computation
             const backComputationResult = this.backComputation.execute({
-                points: points,
+                points: plan.topographic_boundary.coordinates,
                 area: true,
                 round: true,
             });
 
-            plan.parcels![i].legs = backComputationResult.traverse_legs;
-            plan.parcels![i].area = backComputationResult.traverse.area;
+            plan.topographic_boundary.legs = backComputationResult.traverse_legs;
+            plan.topographic_boundary.area = backComputationResult.traverse.area;
         }
 
         // call python server to generate plan
