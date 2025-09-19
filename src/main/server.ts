@@ -30,7 +30,7 @@ const start = async () => {
 
     await app.initialize();
     const expressApp = app.getApp();
-    const port = process.env.PORT || 3003;
+    const port = process.env.PORT || 3000;
 
     expressApp
         .listen(port, () => {
