@@ -242,8 +242,9 @@ export class PlanValidator {
             surveyor_name: 'string',
             page_size: `string|in:${Object.values(PageSize)}`,
             page_orientation: `string|in:${Object.values(PageOrientation)}`,
-            notes: 'array',
-            'notes.*': 'string',
+            footers: 'array',
+            'footers.*': 'string',
+            footer_size: 'numeric',
         };
 
         try {

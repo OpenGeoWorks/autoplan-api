@@ -107,7 +107,8 @@ export interface PlanProps {
     topographic_setting?: TopographicSetting; // For topographic plans
     page_size?: PageSize;
     page_orientation?: PageOrientation;
-    notes: string[];
+    footers: string[];
+    footer_size: number;
 }
 
 export class Plan {
@@ -155,7 +156,8 @@ export class Plan {
     public readonly topographic_setting?: TopographicSetting; // For topographic plans
     public readonly page_size?: PageSize;
     public readonly page_orientation?: PageOrientation;
-    public readonly notes: string[];
+    public readonly footers: string[];
+    public readonly footer_size: number;
 
     constructor(props: PlanProps) {
         this.id = props.id;
@@ -189,6 +191,7 @@ export class Plan {
         this.page_size = props.page_size;
         this.page_orientation = props.page_orientation;
         this.differential_leveling_data = props.differential_leveling_data;
-        this.notes = props.notes || [];
+        this.footers = props.footers;
+        this.footer_size = props.footer_size; // Default to 0.5 if not provided
     }
 }

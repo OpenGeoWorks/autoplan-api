@@ -267,9 +267,13 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         topographic_setting: {
             type: topographicSettingSchema,
         },
-        notes: {
+        footers: {
             type: [String],
             default: [],
+        },
+        footer_size: {
+            type: Number,
+            default: 0.5,
         },
         deleted: {
             type: Boolean,
