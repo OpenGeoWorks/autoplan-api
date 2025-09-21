@@ -59,7 +59,7 @@ export class PlanValidator {
 
     static validateEditTopoBoundary(data: any): Error | null {
         const rules = {
-            coordinates: 'required|array',
+            coordinates: 'array',
             'coordinates.*': {
                 id: 'required|string',
                 northing: 'required|numeric',
