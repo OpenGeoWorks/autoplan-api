@@ -54,6 +54,7 @@ export interface TopographicSetting {
     boundary_label_scale: number;
     tin?: boolean;
     grid?: boolean;
+    show_mesh?: boolean;
 }
 
 export interface TopographicBoundary {

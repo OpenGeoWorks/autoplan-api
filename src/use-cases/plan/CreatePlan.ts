@@ -61,7 +61,8 @@ export class CreatePlan {
                 show_boundary: true,
                 boundary_label_scale: 0.2,
                 tin: false,
-                grid: false,
+                grid: true,
+                show_mesh: false,
             };
         }
 

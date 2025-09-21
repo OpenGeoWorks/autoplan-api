@@ -91,6 +91,7 @@ export class PlanValidator {
             boundary_label_scale: 'numeric',
             tin: 'boolean',
             grid: 'boolean',
+            show_mesh: 'boolean',
         };
 
         try {

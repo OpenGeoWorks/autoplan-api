@@ -145,6 +145,7 @@ export const topographicSettingSchema = new Schema(
         boundary_label_scale: Number,
         tin: Boolean,
         grid: Boolean,
+        show_mesh: Boolean,
     },
     {
         _id: false,
