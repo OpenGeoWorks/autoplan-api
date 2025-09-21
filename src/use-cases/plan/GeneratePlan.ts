@@ -69,7 +69,7 @@ export class GeneratePlan {
 
             plan.topographic_boundary.legs = backComputationResult.traverse_legs;
             plan.topographic_boundary.area = backComputationResult.traverse.area;
-            plan.topographic_setting?.show_mesh = false;
+            plan.topographic_setting!.show_mesh = false;
         }
 
         // call python server to generate plan
