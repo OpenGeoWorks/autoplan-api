@@ -59,7 +59,11 @@ export class GeneratePlan {
             }
         }
 
-        if (plan.type === PlanType.TOPOGRAPHIC && plan.topographic_boundary) {
+        if (
+            plan.type === PlanType.TOPOGRAPHIC &&
+            plan.topographic_boundary &&
+            plan.topographic_boundary.coordinates.length > 0
+        ) {
             // compute back computation
             const backComputationResult = this.backComputation.execute({
                 points: plan.topographic_boundary.coordinates,
