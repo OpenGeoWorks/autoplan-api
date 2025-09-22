@@ -34,10 +34,20 @@ export class App {
     private setupMiddleware(): void {
         this.app.use(json());
         this.app.use(cors({ origin: '*' }));
-        this.app.use((req: Request, res: Response, next: NextFunction) => {
-            res.type('json');
-            next();
-        });
+        // this.app.use((req: Request, res: Response, next: NextFunction) => {
+        //     res.type('json');
+        //     next();
+        // });
+
+        this.app.use(
+            express.json({
+                verify: (req, res, buf) => {
+                    // @ts-ignore
+                    req.rawBody = buf;
+                },
+                limit: '100mb',
+            }),
+        );
 
         // Request logging
         this.app.use((req: Request, res: Response, next: NextFunction) => {
