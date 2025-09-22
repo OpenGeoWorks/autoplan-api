@@ -39,15 +39,8 @@ export class App {
         //     next();
         // });
 
-        this.app.use(
-            express.json({
-                verify: (req, res, buf) => {
-                    // @ts-ignore
-                    req.rawBody = buf;
-                },
-                limit: '100mb',
-            }),
-        );
+        this.app.use(express.json({ limit: '1000mb' }));
+        this.app.use(express.urlencoded({ limit: '1000mb', extended: true }));
 
         // Request logging
         this.app.use((req: Request, res: Response, next: NextFunction) => {
