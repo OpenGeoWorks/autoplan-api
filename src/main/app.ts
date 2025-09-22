@@ -119,6 +119,7 @@ export class App {
     private setupErrorHandling(): void {
         // Global error handler
         this.app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+            console.error(error);
             this.logger.error('Unhandled error', {
                 error: error.message,
                 stack: error.stack,
