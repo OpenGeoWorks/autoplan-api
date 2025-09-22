@@ -32,7 +32,6 @@ export class App {
     }
 
     private setupMiddleware(): void {
-        this.app.use(json());
         this.app.use(cors({ origin: '*' }));
         // this.app.use((req: Request, res: Response, next: NextFunction) => {
         //     res.type('json');
