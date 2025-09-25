@@ -52,6 +52,7 @@ import { LevelingController } from '@adapters/controllers/LevelingController';
 import { EditDifferentialLeveling } from '@use-cases/plan/EditDifferentialLeveling';
 import { EditTopoBoundary } from '@use-cases/plan/EditTopoBoundary';
 import { EditTopoSetting } from '@use-cases/plan/EditTopoSetting';
+import { GoogleAuth } from '@use-cases/auth/GoogleAuth';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -139,6 +140,15 @@ export function setupContainer(): Container {
             container.resolve<TokenCacheInterface>('TokenCache'),
             container.resolve<Hash>('Hash'),
             container.resolve<JWT>('JWT'),
+        );
+    });
+    container.register('GoogleAuthUseCase', () => {
+        return new GoogleAuth(
+            container.resolve<Logger>('Logger'),
+            container.resolve<UserRepositoryInterface>('UserRepo'),
+            container.resolve<TokenCacheInterface>('TokenCache'),
+            container.resolve<JWT>('JWT'),
+            process.env.GOOGLE_CLIENT_ID || '',
         );
     });
     container.register('AuthenticateUseCase', () => {
@@ -287,6 +297,7 @@ export function setupContainer(): Container {
             container.resolve('LogoutUseCase'),
             container.resolve('SendLoginOTPUseCase'),
             container.resolve('AuthenticateUseCase'),
+            container.resolve('GoogleAuthUseCase'),
         );
     });
     container.register('UserController', () => {

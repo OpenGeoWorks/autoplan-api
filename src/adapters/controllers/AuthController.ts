@@ -7,6 +7,7 @@ import { badRequest, handleError, noContent, success } from '@adapters/controlle
 import { AuthValidator } from '@adapters/validators/AuthValidator';
 import { Authenticate, AuthenticateResponse } from '@use-cases/auth/Authenticate';
 import { Logger } from '@domain/types/Common';
+import { GoogleAuth, GoogleAuthRequest, GoogleAuthResponse } from '@use-cases/auth/GoogleAuth';
 
 export class AuthController {
     constructor(
@@ -15,6 +16,7 @@ export class AuthController {
         private readonly logoutUseCase: Logout,
         private readonly sendLoginOTPUseCase: SendLoginOTP,
         private readonly authenticateUseCase: Authenticate,
+        private readonly googleAuthUseCase: GoogleAuth,
     ) {}
 
     async login(req: HttpRequest<LoginRequest>): Promise<HttpResponse<LoginResponse | Error>> {
@@ -25,6 +27,20 @@ export class AuthController {
             }
 
             const response = await this.loginUseCase.execute(req.body!);
+            return success(response);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async googleAuth(req: HttpRequest<GoogleAuthRequest>): Promise<HttpResponse<GoogleAuthResponse | Error>> {
+        try {
+            const error = AuthValidator.validateGoogleAuth(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const response = await this.googleAuthUseCase.execute(req.body!);
             return success(response);
         } catch (e) {
             return handleError(e);

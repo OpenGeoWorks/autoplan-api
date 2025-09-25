@@ -10,6 +10,7 @@ export default (logger: Logger, authController: AuthController): Router => {
 
     router.post('/login/otp', expressRouteAdapter(authController.sendLoginOTP.bind(authController)));
     router.post('/login', expressRouteAdapter(authController.login.bind(authController)));
+    router.post('/login/google', expressRouteAdapter(authController.googleAuth.bind(authController)));
     router.get('/logout', authMiddleware.authenticate, expressRouteAdapter(authController.logout.bind(authController)));
 
     return router;

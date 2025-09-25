@@ -58,4 +58,18 @@ export class AuthValidator {
 
         return null;
     }
+
+    static validateGoogleAuth(data: any): Error | null {
+        const rules = {
+            token: 'required|string',
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
 }
