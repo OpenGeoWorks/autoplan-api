@@ -87,6 +87,7 @@ export class GeneratePlan {
         });
 
         if (!response.ok) {
+            console.log(response);
             throw new BadRequestError('Failed to generate plan');
         }
 
