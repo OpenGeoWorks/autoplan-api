@@ -19,6 +19,10 @@ import { EditElevation, EditElevationRequest } from '@use-cases/plan/EditElevati
 import { EditDifferentialLeveling, EditDifferentialLevelingRequest } from '@use-cases/plan/EditDifferentialLeveling';
 import { EditTopoBoundary, EditTopoBoundaryRequest } from '@use-cases/plan/EditTopoBoundary';
 import { EditTopoSetting, EditTopoSettingRequest } from '@use-cases/plan/EditTopoSetting';
+import {
+    EditLongitudinalProfileParameters,
+    EditLongitudinalProfileParametersRequest,
+} from '@use-cases/plan/EditLongitudinalProfileParameters';
 
 export class PlanController {
     constructor(
@@ -36,6 +40,7 @@ export class PlanController {
         private readonly editDifferentialLevelingUseCase: EditDifferentialLeveling,
         private readonly editTopoBoundaryUseCase: EditTopoBoundary,
         private readonly editTopoSettingUseCase: EditTopoSetting,
+        private readonly editLongitudinalProfileParametersUseCase: EditLongitudinalProfileParameters,
     ) {}
 
     async createPlan(
@@ -297,6 +302,7 @@ export class PlanController {
                         page_orientation: 1,
                         footers: 1,
                         footer_size: 1,
+                        dxf_version: 1,
                         created_at: 1,
                         updated_at: 1,
                     },
@@ -423,6 +429,40 @@ export class PlanController {
                     filter: { user: req.user!.id },
                     projection: {
                         topographic_setting: 1,
+                        created_at: 1,
+                        updated_at: 1,
+                    },
+                },
+            });
+
+            return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async editLongitudinalProfileParameters(
+        req: HttpRequest<
+            EditLongitudinalProfileParametersRequest['params'],
+            { plan_id: string },
+            undefined,
+            undefined,
+            AuthenticateResponse
+        >,
+    ): Promise<HttpResponse<Plan | Error>> {
+        try {
+            const error = PlanValidator.validateEditLongitudinalProfileParameters(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            const plan = await this.editLongitudinalProfileParametersUseCase.execute({
+                plan_id: req.params!.plan_id,
+                params: req.body!,
+                options: {
+                    filter: { user: req.user!.id },
+                    projection: {
+                        longitudinal_profile_parameters: 1,
                         created_at: 1,
                         updated_at: 1,
                     },

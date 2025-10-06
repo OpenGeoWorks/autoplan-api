@@ -152,6 +152,20 @@ export const topographicSettingSchema = new Schema(
     },
 );
 
+export const longitudinalProfileParametersSchema = new Schema(
+    {
+        horizontal_scale: Number,
+        vertical_scale: Number,
+        profile_origin: [Number],
+        station_interval: Number,
+        elevation_interval: Number,
+        starting_chainage: Number,
+    },
+    {
+        _id: false,
+    },
+);
+
 const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
     {
         user: {
@@ -275,6 +289,13 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         footer_size: {
             type: Number,
             default: 0.5,
+        },
+        longitudinal_profile_parameters: {
+            type: longitudinalProfileParametersSchema,
+        },
+        dxf_version: {
+            type: String,
+            default: 'R2010',
         },
         deleted: {
             type: Boolean,

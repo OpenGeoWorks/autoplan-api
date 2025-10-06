@@ -23,6 +23,10 @@ export default (logger: Logger, authController: AuthController, planController: 
         expressRouteAdapter(planController.editTopoBoundary.bind(planController)),
     );
     router.put('/topo/setting/edit/:plan_id', expressRouteAdapter(planController.editTopoSetting.bind(planController)));
+    router.put(
+        '/route/longitudinal/params/edit/:plan_id',
+        expressRouteAdapter(planController.editLongitudinalProfileParameters.bind(planController)),
+    );
     router.delete('/delete/:plan_id', expressRouteAdapter(planController.deletePlan.bind(planController)));
     router.put(
         '/traverse-data/edit/:plan_id',

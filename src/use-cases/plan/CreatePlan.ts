@@ -66,6 +66,17 @@ export class CreatePlan {
             };
         }
 
+        if (planData.type === PlanType.ROUTE) {
+            planData.longitudinal_profile_parameters = {
+                horizontal_scale: 1.0,
+                vertical_scale: 10,
+                profile_origin: [0.0, 0.0],
+                station_interval: 10,
+                elevation_interval: 1.0,
+                starting_chainage: 0.0,
+            };
+        }
+
         // create plan
         return await this.planRepo.createPlan(planData);
     }

@@ -103,6 +103,26 @@ export class PlanValidator {
         return null;
     }
 
+    static validateEditLongitudinalProfileParameters(data: any): Error | null {
+        const rules = {
+            horizontal_scale: 'numeric',
+            vertical_scale: 'numeric',
+            profile_origin: 'array',
+            'profile_origin.*': 'numeric',
+            station_interval: 'numeric',
+            elevation_interval: 'numeric',
+            starting_chainage: 'numeric',
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
+
     static validateEditParcels(data: any): Error | null {
         const rules = {
             parcels: 'required|array',
@@ -246,6 +266,7 @@ export class PlanValidator {
             footers: 'array',
             'footers.*': 'string',
             footer_size: 'numeric',
+            dxf_version: 'string',
         };
 
         try {

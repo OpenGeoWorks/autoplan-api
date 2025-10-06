@@ -53,6 +53,7 @@ import { EditDifferentialLeveling } from '@use-cases/plan/EditDifferentialLeveli
 import { EditTopoBoundary } from '@use-cases/plan/EditTopoBoundary';
 import { EditTopoSetting } from '@use-cases/plan/EditTopoSetting';
 import { GoogleAuth } from '@use-cases/auth/GoogleAuth';
+import { EditLongitudinalProfileParameters } from '@use-cases/plan/EditLongitudinalProfileParameters';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -287,6 +288,12 @@ export function setupContainer(): Container {
     container.register('DifferentialLevelingUseCase', () => {
         return new DifferentialLeveling(container.resolve<Logger>('Logger'));
     });
+    container.register('EditLongitudinalProfileParametersUseCase', () => {
+        return new EditLongitudinalProfileParameters(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -348,6 +355,7 @@ export function setupContainer(): Container {
             container.resolve('EditDifferentialLevelingUseCase'),
             container.resolve('EditTopoBoundaryUseCase'),
             container.resolve('EditTopoSettingUseCase'),
+            container.resolve('EditLongitudinalProfileParametersUseCase'),
         );
     });
 

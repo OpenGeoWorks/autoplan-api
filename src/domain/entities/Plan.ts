@@ -63,6 +63,15 @@ export interface TopographicBoundary {
     legs?: TraverseLegProps[];
 }
 
+export interface LongitudinalProfileParameters {
+    horizontal_scale?: number;
+    vertical_scale?: number;
+    profile_origin?: number[];
+    station_interval?: number;
+    elevation_interval?: number;
+    starting_chainage?: number;
+}
+
 export interface PlanProps {
     id: string;
     created_at: Date;
@@ -110,6 +119,8 @@ export interface PlanProps {
     page_orientation?: PageOrientation;
     footers: string[];
     footer_size: number;
+    longitudinal_profile_parameters?: LongitudinalProfileParameters;
+    dxf_version?: string; // e.g., R12, R2000
 }
 
 export class Plan {
@@ -159,6 +170,8 @@ export class Plan {
     public readonly page_orientation?: PageOrientation;
     public readonly footers: string[];
     public readonly footer_size: number;
+    public readonly longitudinal_profile_parameters?: LongitudinalProfileParameters;
+    public readonly dxf_version?: string; // e.g., R12, R2000
 
     constructor(props: PlanProps) {
         this.id = props.id;
@@ -194,5 +207,7 @@ export class Plan {
         this.differential_leveling_data = props.differential_leveling_data;
         this.footers = props.footers;
         this.footer_size = props.footer_size; // Default to 0.5 if not provided
+        this.longitudinal_profile_parameters = props.longitudinal_profile_parameters;
+        this.dxf_version = props.dxf_version; // Default to R12 if not provided
     }
 }
