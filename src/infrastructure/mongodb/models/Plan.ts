@@ -295,7 +295,7 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         dxf_version: {
             type: String,
-            default: 'R2010',
+            default: 'R2000',
         },
         deleted: {
             type: Boolean,
