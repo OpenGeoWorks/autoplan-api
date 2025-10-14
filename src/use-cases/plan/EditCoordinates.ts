@@ -3,6 +3,7 @@ import { Logger, RepoOptions } from '@domain/types/Common';
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
 import { Plan } from '@domain/entities/Plan';
 import NotFoundError from '@domain/errors/NotFoundError';
+import { ComputePlanEmbellishments } from '@use-cases/plan/ComputePlanEmbellishments';
 
 export interface EditCoordinatesRequest {
     plan_id: string;
@@ -11,10 +12,14 @@ export interface EditCoordinatesRequest {
 }
 
 export class EditCoordinates {
+    private readonly computeEmbellishments: ComputePlanEmbellishments;
+
     constructor(
         private readonly logger: Logger,
         private readonly planRepo: PlanRepositoryInterface,
-    ) {}
+    ) {
+        this.computeEmbellishments = new ComputePlanEmbellishments(logger);
+    }
 
     async execute(data: EditCoordinatesRequest): Promise<Plan> {
         this.logger.info('EditCoordinates', data);
@@ -30,6 +35,9 @@ export class EditCoordinates {
 
             check[coord.id] = true;
         }
+
+        // compute embellishments
+        this.computeEmbellishments.execute({ coordinates: updatedCoordinates });
 
         const plan = await this.planRepo.editPlan(data.plan_id, { coordinates: updatedCoordinates }, data.options);
         if (!plan) {
