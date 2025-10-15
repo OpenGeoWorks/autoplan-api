@@ -45,7 +45,7 @@ export class ComputePlanEmbellishments {
 
         // calculate area of frame
         const frameArea = (frameRight - frameLeft) * (frameTop - frameBottom);
-        this.logger.debug(`Frame Area: ${frameArea}`);
+        console.log(`Frame Area: ${frameArea}`);
 
         return {
             font_size: 0,
