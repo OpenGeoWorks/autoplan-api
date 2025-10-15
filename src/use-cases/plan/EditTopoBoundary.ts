@@ -1,8 +1,9 @@
-import { Plan, PlanType, TopographicBoundary } from '@domain/entities/Plan';
+import { Plan, PlanProps, PlanType, TopographicBoundary } from '@domain/entities/Plan';
 import { Logger, RepoOptions } from '@domain/types/Common';
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
 import NotFoundError from '@domain/errors/NotFoundError';
 import BadRequestError from '@domain/errors/BadRequestError';
+import { ComputePlanEmbellishments } from '@use-cases/plan/ComputePlanEmbellishments';
 
 export interface EditTopoBoundaryRequest {
     plan_id: string;
@@ -11,16 +12,24 @@ export interface EditTopoBoundaryRequest {
 }
 
 export class EditTopoBoundary {
+    private readonly computeEmbellishments: ComputePlanEmbellishments;
+
     constructor(
         private readonly logger: Logger,
         private readonly planRepo: PlanRepositoryInterface,
-    ) {}
+    ) {
+        this.computeEmbellishments = new ComputePlanEmbellishments(logger);
+    }
 
     async execute(data: EditTopoBoundaryRequest): Promise<Plan> {
         this.logger.info('EditTopoBoundary', data);
 
         const filter = data.options?.filter || {};
-        let plan = await this.planRepo.getPlanById(data.plan_id, { projection: { type: 1 }, filter });
+        let plan = await this.planRepo.getPlanById(data.plan_id, {
+            projection: { type: 1, coordinates: 1, topographic_setting: 1 },
+            filter,
+        });
+
         if (!plan) {
             throw new NotFoundError('Plan not found');
         }
@@ -46,7 +55,25 @@ export class EditTopoBoundary {
             data.boundary.coordinates.push(data.boundary.coordinates[0]);
         }
 
-        plan = await this.planRepo.editPlan(data.plan_id, { topographic_boundary: data.boundary }, data.options);
+        // compute embellishments
+        const embellishmentCoordinates = [...data.boundary.coordinates, ...(plan.coordinates || [])];
+        const embellishments = this.computeEmbellishments.execute({ coordinates: embellishmentCoordinates });
+
+        const update: Partial<PlanProps> = {
+            topographic_boundary: data.boundary,
+            font_size: embellishments.font_size,
+            beacon_size: embellishments.beacon_size,
+            label_size: embellishments.label_size,
+            footer_size: embellishments.footer_size,
+        };
+
+        if (plan.topographic_setting) {
+            plan.topographic_setting.point_label_scale = embellishments.point_label_scale;
+            plan.topographic_setting.contour_label_scale = embellishments.contour_label_scale;
+            update.topographic_setting = plan.topographic_setting;
+        }
+
+        plan = await this.planRepo.editPlan(data.plan_id, update, data.options);
         if (!plan) {
             throw new NotFoundError('Plan not found');
         }

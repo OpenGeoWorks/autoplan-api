@@ -17,6 +17,12 @@ export interface ComputePlanEmbellishmentsResponse {
 export class ComputePlanEmbellishments {
     private readonly frame_x_percent = 0.9;
     private readonly frame_y_percent = 1.5;
+    private readonly font_size_percent = 0.0127;
+    private readonly beacon_size_percent = 0.0127;
+    private readonly label_size_percent = 0.0088;
+    private readonly footer_size_percent = 0.0088;
+    private readonly point_label_scale_percent = 0.0014;
+    private readonly contour_label_scale_percent = 0.00488;
 
     constructor(private readonly logger: Logger) {}
 
@@ -45,15 +51,15 @@ export class ComputePlanEmbellishments {
 
         // calculate area of frame
         const frameArea = (frameRight - frameLeft) * (frameTop - frameBottom);
-        console.log(`Frame Area: ${frameArea}`);
+        const areaSqrt = Math.sqrt(frameArea);
 
         return {
-            font_size: 0,
-            beacon_size: 0,
-            label_size: 0,
-            footer_size: 0,
-            point_label_scale: 0,
-            contour_label_scale: 0,
+            font_size: Math.ceil(areaSqrt * this.font_size_percent * 10) / 10,
+            beacon_size: Math.ceil(areaSqrt * this.beacon_size_percent * 10) / 10,
+            label_size: Math.ceil(areaSqrt * this.label_size_percent * 10) / 10,
+            footer_size: Math.ceil(areaSqrt * this.footer_size_percent * 10) / 10,
+            point_label_scale: Math.ceil(areaSqrt * this.point_label_scale_percent * 10) / 10,
+            contour_label_scale: Math.ceil(areaSqrt * this.contour_label_scale_percent * 10) / 10,
         };
     }
 }
