@@ -23,8 +23,8 @@ jobs:
                   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
               run: |
                 echo "Building and pushing docker image"
-                docker build -t $DOCKER_USERNAME/autoplan:latest .
-                docker push $DOCKER_USERNAME/autoplan:latest
+                docker build -t $DOCKER_USERNAME/autoplan-api:latest .
+                docker push $DOCKER_USERNAME/autoplan-api:latest
 
             - name: Deploy to DigitalOcean
               uses: appleboy/ssh-action@master
@@ -35,5 +35,5 @@ jobs:
                 port: ${{ secrets.SERVER_PORT }}
                 script: |
                     cd /opengeoworks
-                    docker compose pull autoplan
-                    docker compose up --build -d autoplan
+                    docker compose pull autoplan-api
+                    docker compose up --build -d autoplan-api

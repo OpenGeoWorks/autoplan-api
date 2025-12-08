@@ -2,7 +2,7 @@ name: Staging Fly Deploy
 on:
     push:
         branches:
-            - main
+            - blah
 jobs:
     deploy:
         name: Deploy to fly
