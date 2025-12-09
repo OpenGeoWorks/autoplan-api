@@ -34,6 +34,6 @@ jobs:
                 key: ${{ secrets.SERVER_SSH_KEY }}
                 port: ${{ secrets.SERVER_PORT }}
                 script: |
-                    cd /opengeoworks
+                    cd /opengeoworks/production
                     docker compose pull autoplan-api
                     docker compose up --build -d autoplan-api
