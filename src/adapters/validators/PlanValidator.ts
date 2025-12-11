@@ -6,7 +6,9 @@ export class PlanValidator {
         const rules = {
             project: 'required|string',
             name: 'required|string',
-            type: `required|in:${Object.values(PlanType)}`,
+            computation_only: `required|boolean`,
+            // type: `required_if:computation_only,false|in:${Object.values(PlanType)}`,
+            type: [{ required_if: ['computation_only', false] }],
         };
 
         try {
@@ -267,6 +269,20 @@ export class PlanValidator {
             'footers.*': 'string',
             footer_size: 'numeric',
             dxf_version: 'string',
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
+
+    static validateConvertComputation(data: any): Error | null {
+        const rules = {
+            type: `required|in:${Object.values(PlanType)}`,
         };
 
         try {

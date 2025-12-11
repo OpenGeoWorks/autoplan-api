@@ -23,6 +23,7 @@ import {
     EditLongitudinalProfileParameters,
     EditLongitudinalProfileParametersRequest,
 } from '@use-cases/plan/EditLongitudinalProfileParameters';
+import { ConvertComputation, ConvertComputationRequest } from '@use-cases/plan/ConvertComputation';
 
 export class PlanController {
     constructor(
@@ -41,6 +42,7 @@ export class PlanController {
         private readonly editTopoBoundaryUseCase: EditTopoBoundary,
         private readonly editTopoSettingUseCase: EditTopoSetting,
         private readonly editLongitudinalProfileParametersUseCase: EditLongitudinalProfileParameters,
+        private readonly convertComputationUseCase: ConvertComputation,
     ) {}
 
     async createPlan(
@@ -319,13 +321,18 @@ export class PlanController {
         req: HttpRequest<undefined, { project_id: string }, undefined, Record<string, string>, AuthenticateResponse>,
     ): Promise<HttpResponse<Plan[] | Error>> {
         try {
-            const repoOptions: RepoOptions = parseQuery(req.query!, ['type'], ['created_at', 'updated_at']);
+            const repoOptions: RepoOptions = parseQuery(
+                req.query!,
+                ['type', 'bool-computation_only'],
+                ['created_at', 'updated_at'],
+            );
             repoOptions.filter = repoOptions.filter ?? {};
             repoOptions.filter['user'] = req.user!.id;
             repoOptions.projection = {
                 id: 1,
                 name: 1,
                 type: 1,
+                computation_only: 1,
                 created_at: 1,
                 updated_at: 1,
             };
@@ -470,6 +477,29 @@ export class PlanController {
             });
 
             return success(plan);
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async convertComputation(
+        req: HttpRequest<ConvertComputationRequest, { plan_id: string }, undefined, undefined, AuthenticateResponse>,
+    ): Promise<HttpResponse<void | Error>> {
+        try {
+            const error = PlanValidator.validateConvertComputation(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            await this.convertComputationUseCase.execute({
+                ...req.body!,
+                plan_id: req.params!.plan_id,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return noContent();
         } catch (e) {
             return handleError(e);
         }

@@ -42,5 +42,10 @@ export default (logger: Logger, authController: AuthController, planController: 
     );
     router.get('/generate/:plan_id', expressRouteAdapter(planController.generatePlan.bind(planController)));
 
+    router.put(
+        '/computation/convert/:plan_id',
+        expressRouteAdapter(planController.convertComputation.bind(planController)),
+    );
+
     return router;
 };

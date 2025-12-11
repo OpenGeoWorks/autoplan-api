@@ -121,6 +121,7 @@ export interface PlanProps {
     footer_size: number;
     longitudinal_profile_parameters?: LongitudinalProfileParameters;
     dxf_version?: string; // e.g., R12, R2000
+    computation_only: boolean;
 }
 
 export class Plan {
@@ -172,6 +173,7 @@ export class Plan {
     public readonly footer_size: number;
     public readonly longitudinal_profile_parameters?: LongitudinalProfileParameters;
     public readonly dxf_version?: string; // e.g., R12, R2000
+    public readonly computation_only: boolean;
 
     constructor(props: PlanProps) {
         this.id = props.id;
@@ -209,5 +211,6 @@ export class Plan {
         this.footer_size = props.footer_size; // Default to 0.5 if not provided
         this.longitudinal_profile_parameters = props.longitudinal_profile_parameters;
         this.dxf_version = props.dxf_version; // Default to R12 if not provided
+        this.computation_only = props.computation_only;
     }
 }

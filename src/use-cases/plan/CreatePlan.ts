@@ -5,7 +5,7 @@ import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRep
 import NotFoundError from '@domain/errors/NotFoundError';
 
 export interface CreatePlanRequest {
-    plan: Pick<PlanProps, 'name' | 'type' | 'project'>;
+    plan: Pick<PlanProps, 'name' | 'type' | 'project' | 'computation_only'>;
     options?: RepoOptions;
 }
 
@@ -17,7 +17,7 @@ export class CreatePlan {
     ) {}
 
     async execute(data: CreatePlanRequest): Promise<Plan> {
-        this.logger.debug('Create Project execute');
+        this.logger.debug('Create Plan execute');
 
         // get project
         const project = await this.projectRepo.getProjectById(data.plan.project as string, data.options);
@@ -46,6 +46,7 @@ export class CreatePlan {
             title: 'Untitled Plan',
             footers: [],
             footer_size: 0.5,
+            computation_only: data.plan.computation_only,
         };
 
         if (planData.type === PlanType.TOPOGRAPHIC) {

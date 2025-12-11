@@ -185,7 +185,7 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         type: {
             type: String,
             enum: Object.values(PlanType),
-            default: PlanType.CADASTRAL,
+            // default: PlanType.CADASTRAL,
         },
         font: {
             type: String,
@@ -296,6 +296,10 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         dxf_version: {
             type: String,
             default: 'R2000',
+        },
+        computation_only: {
+            type: Boolean,
+            default: false,
         },
         deleted: {
             type: Boolean,

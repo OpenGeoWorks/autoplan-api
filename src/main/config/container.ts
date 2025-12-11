@@ -54,6 +54,7 @@ import { EditTopoBoundary } from '@use-cases/plan/EditTopoBoundary';
 import { EditTopoSetting } from '@use-cases/plan/EditTopoSetting';
 import { GoogleAuth } from '@use-cases/auth/GoogleAuth';
 import { EditLongitudinalProfileParameters } from '@use-cases/plan/EditLongitudinalProfileParameters';
+import { ConvertComputation } from '@use-cases/plan/ConvertComputation';
 
 export class Container {
     private instances = new Map<string, any>();
@@ -294,6 +295,12 @@ export function setupContainer(): Container {
             container.resolve<PlanRepositoryInterface>('PlanRepo'),
         );
     });
+    container.register('ConvertComputationUseCase', () => {
+        return new ConvertComputation(
+            container.resolve<Logger>('Logger'),
+            container.resolve<PlanRepositoryInterface>('PlanRepo'),
+        );
+    });
 
     // Register Controllers
     container.register('AuthController', () => {
@@ -356,6 +363,7 @@ export function setupContainer(): Container {
             container.resolve('EditTopoBoundaryUseCase'),
             container.resolve('EditTopoSettingUseCase'),
             container.resolve('EditLongitudinalProfileParametersUseCase'),
+            container.resolve('ConvertComputationUseCase'),
         );
     });
 
