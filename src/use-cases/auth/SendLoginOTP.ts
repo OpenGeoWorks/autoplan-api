@@ -49,7 +49,6 @@ export class SendLoginOTP {
 
         // generate OTP
         const otp = await this.createOTP.execute({ identifier: user.id, type: `login_otp`, exp: 10 });
-        console.log(otp);
         await this.sendOTP(user.email, 10, otp);
     }
 

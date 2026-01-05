@@ -293,4 +293,19 @@ export class PlanValidator {
 
         return null;
     }
+
+    static validateImportComputation(data: any): Error | null {
+        const rules = {
+            computation_id: 'required|string',
+            replace: 'required|boolean',
+        };
+
+        try {
+            validator.validate(data, rules);
+        } catch (e) {
+            return new Error((e as Error).message);
+        }
+
+        return null;
+    }
 }

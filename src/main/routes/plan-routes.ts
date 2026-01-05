@@ -40,12 +40,15 @@ export default (logger: Logger, authController: AuthController, planController: 
         '/differential-leveling-data/edit/:plan_id',
         expressRouteAdapter(planController.editDifferentialLeveling.bind(planController)),
     );
+
     router.get('/generate/:plan_id', expressRouteAdapter(planController.generatePlan.bind(planController)));
 
     router.put(
         '/computation/convert/:plan_id',
         expressRouteAdapter(planController.convertComputation.bind(planController)),
     );
+
+    router.put('/import/:plan_id', expressRouteAdapter(planController.importComputation.bind(planController)));
 
     return router;
 };

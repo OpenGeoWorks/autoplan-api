@@ -24,6 +24,7 @@ import {
     EditLongitudinalProfileParametersRequest,
 } from '@use-cases/plan/EditLongitudinalProfileParameters';
 import { ConvertComputation, ConvertComputationRequest } from '@use-cases/plan/ConvertComputation';
+import { ImportComputation, ImportComputationRequest } from '@use-cases/plan/ImportComputation';
 
 export class PlanController {
     constructor(
@@ -43,6 +44,7 @@ export class PlanController {
         private readonly editTopoSettingUseCase: EditTopoSetting,
         private readonly editLongitudinalProfileParametersUseCase: EditLongitudinalProfileParameters,
         private readonly convertComputationUseCase: ConvertComputation,
+        private readonly importComputationUseCase: ImportComputation,
     ) {}
 
     async createPlan(
@@ -492,6 +494,29 @@ export class PlanController {
             }
 
             await this.convertComputationUseCase.execute({
+                ...req.body!,
+                plan_id: req.params!.plan_id,
+                options: {
+                    filter: { user: req.user!.id },
+                },
+            });
+
+            return noContent();
+        } catch (e) {
+            return handleError(e);
+        }
+    }
+
+    async importComputation(
+        req: HttpRequest<ImportComputationRequest, { plan_id: string }, undefined, undefined, AuthenticateResponse>,
+    ): Promise<HttpResponse<void | Error>> {
+        try {
+            const error = PlanValidator.validateImportComputation(req.body);
+            if (error) {
+                return badRequest(error);
+            }
+
+            await this.importComputationUseCase.execute({
                 ...req.body!,
                 plan_id: req.params!.plan_id,
                 options: {

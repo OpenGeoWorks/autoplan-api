@@ -3,6 +3,12 @@ import { LongitudinalProfileParameters, PlanType, TopographicSetting } from '@do
 import { PlanRepositoryInterface } from '@domain/interfaces/repositories/PlanRepositoryInterface';
 import NotFoundError from '@domain/errors/NotFoundError';
 import BadRequestError from '@domain/errors/BadRequestError';
+import { ForwardComputation } from '@use-cases/traversing/ForwardComputation';
+import { EditCoordinates } from '@use-cases/plan/EditCoordinates';
+import { EditTopoBoundary } from '@use-cases/plan/EditTopoBoundary';
+import { TraverseComputation } from '@use-cases/traversing/TraverseComputation';
+import { DifferentialLeveling } from '@use-cases/leveling/DifferentialLeveling';
+import { EditElevation } from '@use-cases/plan/EditElevation';
 
 export interface ConvertComputationRequest {
     plan_id: string;
@@ -14,13 +20,19 @@ export class ConvertComputation {
     constructor(
         private readonly logger: Logger,
         private readonly planRepo: PlanRepositoryInterface,
+        private readonly forwardComputationUseCase: ForwardComputation,
+        private readonly traverseComputationUseCase: TraverseComputation,
+        private readonly editCoordinatesUseCase: EditCoordinates,
+        private readonly editTopoBoundaryUseCase: EditTopoBoundary,
+        private readonly differentialLevelingUseCase: DifferentialLeveling,
+        private readonly editElevationUseCase: EditElevation,
     ) {}
 
     async execute(data: ConvertComputationRequest): Promise<void> {
         this.logger.debug('Convert Computation execute');
 
         // get plan
-        const plan = await this.planRepo.getPlanById(data.plan_id, data.options);
+        let plan = await this.planRepo.getPlanById(data.plan_id, data.options);
         if (!plan) {
             throw new NotFoundError('Plan not found');
         }
@@ -61,11 +73,95 @@ export class ConvertComputation {
             throw new BadRequestError('Only Computations can be converted to a plan');
         }
 
-        await this.planRepo.editPlan(plan.id, {
+        plan = await this.planRepo.editPlan(plan.id, {
             computation_only: false,
             type: data.type,
             longitudinal_profile_parameters: longitudinalProfileParameters,
             topographic_setting: topographicSetting,
         });
+
+        if (!plan) {
+            throw new NotFoundError('Plan not found');
+        }
+
+        // add coordinates
+        if (plan.forward_computation_data) {
+            const forwardComputationResult = this.forwardComputationUseCase.execute(plan.forward_computation_data);
+
+            const coordinates = [forwardComputationResult.start];
+            for (let i = 0; i < forwardComputationResult.computed_legs.length; i++) {
+                coordinates.push(forwardComputationResult.computed_legs[i].to);
+                coordinates.push(forwardComputationResult.computed_legs[i].from);
+            }
+
+            // depending on the type of plan
+            if (plan.type === PlanType.CADASTRAL || plan.type === PlanType.LAYOUT) {
+                // update coordinates
+                await this.editCoordinatesUseCase.execute({
+                    plan_id: plan.id,
+                    coordinates: coordinates,
+                });
+            }
+
+            if (plan.type === PlanType.TOPOGRAPHIC) {
+                // update topo boundaries
+                await this.editTopoBoundaryUseCase.execute({
+                    plan_id: plan.id,
+                    boundary: {
+                        coordinates: coordinates,
+                    },
+                });
+            }
+        }
+
+        if (plan.traverse_computation_data) {
+            const traverseComputationResult = this.traverseComputationUseCase.execute(plan.traverse_computation_data);
+
+            const coordinates = [];
+            for (let i = 0; i < traverseComputationResult.traverse_legs.length; i++) {
+                coordinates.push(traverseComputationResult.traverse_legs[i].to);
+                coordinates.push(traverseComputationResult.traverse_legs[i].from);
+            }
+
+            // depending on the type of plan
+            if (plan.type === PlanType.CADASTRAL || plan.type === PlanType.LAYOUT) {
+                // update coordinates
+                await this.editCoordinatesUseCase.execute({
+                    plan_id: plan.id,
+                    coordinates: coordinates,
+                });
+            }
+
+            if (plan.type === PlanType.TOPOGRAPHIC) {
+                // update topo boundaries
+                await this.editTopoBoundaryUseCase.execute({
+                    plan_id: plan.id,
+                    boundary: {
+                        coordinates: coordinates,
+                    },
+                });
+            }
+        }
+
+        if (plan.differential_leveling_data) {
+            const differentialLevelResult = this.differentialLevelingUseCase.execute(plan.differential_leveling_data);
+
+            const elevations = [];
+            for (let i = 0; i < differentialLevelResult.stations.length; i++) {
+                elevations.push({
+                    id: differentialLevelResult.stations[i].stn as string,
+                    chainage: differentialLevelResult.stations[i].chainage as string,
+                    elevation: differentialLevelResult.stations[i].reduced_level as number,
+                });
+            }
+
+            if (plan.type === PlanType.ROUTE) {
+                // update elevations
+                await this.editElevationUseCase.execute({
+                    plan_id: plan.id,
+                    elevations: elevations,
+                });
+            }
+        }
     }
 }
