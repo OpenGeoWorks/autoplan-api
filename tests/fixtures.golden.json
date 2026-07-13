@@ -1,0 +1,455 @@
+{
+  "area": {
+    "area": 8000
+  },
+  "back": {
+    "traverse_legs": [
+      {
+        "from": {
+          "id": "A",
+          "northing": 712345,
+          "easting": 543210
+        },
+        "to": {
+          "id": "B",
+          "northing": 712345,
+          "easting": 543310
+        },
+        "distance": 100,
+        "bearing": {
+          "degrees": 90,
+          "minutes": 0,
+          "seconds": 0,
+          "decimal": 90
+        },
+        "delta_northing": 0,
+        "delta_easting": 100
+      },
+      {
+        "from": {
+          "id": "B",
+          "northing": 712345,
+          "easting": 543310
+        },
+        "to": {
+          "id": "C",
+          "northing": 712425,
+          "easting": 543310
+        },
+        "distance": 80,
+        "bearing": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": 0,
+          "decimal": 0
+        },
+        "delta_northing": 80,
+        "delta_easting": 0
+      },
+      {
+        "from": {
+          "id": "C",
+          "northing": 712425,
+          "easting": 543310
+        },
+        "to": {
+          "id": "D",
+          "northing": 712425,
+          "easting": 543210
+        },
+        "distance": 100,
+        "bearing": {
+          "degrees": 270,
+          "minutes": 0,
+          "seconds": 0,
+          "decimal": 270
+        },
+        "delta_northing": 0,
+        "delta_easting": -100
+      },
+      {
+        "from": {
+          "id": "D",
+          "northing": 712425,
+          "easting": 543210
+        },
+        "to": {
+          "id": "A",
+          "northing": 712345,
+          "easting": 543210
+        },
+        "distance": 80,
+        "bearing": {
+          "degrees": 180,
+          "minutes": 0,
+          "seconds": 0,
+          "decimal": 180
+        },
+        "delta_northing": -80,
+        "delta_easting": 0
+      }
+    ],
+    "traverse": {
+      "total_distance": 360,
+      "bounding_box": {
+        "min_northing": 712345,
+        "max_northing": 712425,
+        "min_easting": 543210,
+        "max_easting": 543310
+      },
+      "area": 8000
+    }
+  },
+  "forward": {
+    "start": {
+      "id": "A",
+      "northing": 712345,
+      "easting": 543210
+    },
+    "computed_legs": [
+      {
+        "from": {
+          "id": "A",
+          "northing": 712345,
+          "easting": 543210
+        },
+        "to": {
+          "id": "P1",
+          "northing": 712425.747,
+          "easting": 543289.607
+        },
+        "distance": 120.5,
+        "bearing": {
+          "degrees": 45,
+          "minutes": 30,
+          "seconds": 10
+        },
+        "delta_northing": 84.455,
+        "delta_easting": 85.951,
+        "arithmetic_sum_northing": 84,
+        "arithmetic_sum_easting": 86,
+        "northing_misclosure": -3.70794,
+        "easting_misclosure": -6.34361
+      },
+      {
+        "from": {
+          "id": "P1",
+          "northing": 712425.747,
+          "easting": 543289.607
+        },
+        "to": {
+          "id": "P2",
+          "northing": 712365.475,
+          "easting": 543352.763
+        },
+        "distance": 89.32,
+        "bearing": {
+          "degrees": 130,
+          "minutes": 15,
+          "seconds": 0
+        },
+        "delta_northing": -57.712,
+        "delta_easting": 68.172,
+        "arithmetic_sum_northing": 142,
+        "arithmetic_sum_easting": 154,
+        "northing_misclosure": -6.26819,
+        "easting_misclosure": -11.35949
+      },
+      {
+        "from": {
+          "id": "P2",
+          "northing": 712365.475,
+          "easting": 543352.763
+        },
+        "to": {
+          "id": "E",
+          "northing": 712500.123,
+          "easting": 543400.456
+        },
+        "distance": 150,
+        "bearing": {
+          "degrees": 20,
+          "minutes": 5,
+          "seconds": 30
+        },
+        "delta_northing": 140.872,
+        "delta_easting": 51.528,
+        "arithmetic_sum_northing": 283,
+        "arithmetic_sum_easting": 206,
+        "northing_misclosure": -12.49224,
+        "easting_misclosure": -15.19516
+      }
+    ],
+    "traverse": {
+      "total_distance": 359.82,
+      "bounding_box": {
+        "min_northing": 712365.475,
+        "max_northing": 712500.123,
+        "min_easting": 543289.607,
+        "max_easting": 543400.456
+      }
+    },
+    "northing_misclosure": 0,
+    "easting_misclosure": 0
+  },
+  "traverse": {
+    "traverse_legs": [
+      {
+        "from": {
+          "id": "A",
+          "northing": 712345,
+          "easting": 543210
+        },
+        "to": {
+          "id": "B",
+          "northing": 712345,
+          "easting": 543310
+        },
+        "distance": 100,
+        "bearing": {
+          "degrees": 90,
+          "minutes": 0,
+          "seconds": 0,
+          "decimal": 90
+        },
+        "delta_northing": 0,
+        "delta_easting": 100
+      },
+      {
+        "from": {
+          "id": "B",
+          "northing": 712345,
+          "easting": 543310
+        },
+        "to": {
+          "id": "T1",
+          "northing": 712344.789,
+          "easting": 543310.315
+        },
+        "distance": 95.5,
+        "bearing": {
+          "degrees": 120,
+          "minutes": 15,
+          "seconds": 20,
+          "decimal": 120.256
+        },
+        "delta_northing": -48.118,
+        "delta_easting": 82.492,
+        "arithmetic_sum_northing": 48,
+        "arithmetic_sum_easting": 82,
+        "northing_misclosure": 47.90769,
+        "easting_misclosure": -82.1768,
+        "observed_angle": {
+          "degrees": 210,
+          "minutes": 15,
+          "seconds": 20
+        },
+        "back_bearing": {
+          "degrees": 270,
+          "minutes": 0,
+          "seconds": 0,
+          "decimal": 270
+        },
+        "forward_bearing": {
+          "degrees": 120,
+          "minutes": 15,
+          "seconds": 20,
+          "decimal": 120.256
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": 0
+        }
+      },
+      {
+        "from": {
+          "id": "T1",
+          "northing": 712344.789,
+          "easting": 543310.315
+        },
+        "to": {
+          "id": "T2",
+          "northing": 712345.011,
+          "easting": 543310.364
+        },
+        "distance": 110.2,
+        "bearing": {
+          "degrees": 125,
+          "minutes": 55,
+          "seconds": 20,
+          "decimal": 125.922
+        },
+        "delta_northing": -64.653,
+        "delta_easting": 89.242,
+        "arithmetic_sum_northing": 113,
+        "arithmetic_sum_easting": 171,
+        "northing_misclosure": 112.78268,
+        "easting_misclosure": -171.36869,
+        "observed_angle": {
+          "degrees": 185,
+          "minutes": 40,
+          "seconds": 0
+        },
+        "back_bearing": {
+          "degrees": 300,
+          "minutes": 15,
+          "seconds": 20,
+          "decimal": 300.256
+        },
+        "forward_bearing": {
+          "degrees": 125,
+          "minutes": 55,
+          "seconds": 20,
+          "decimal": 125.922
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": 0
+        }
+      },
+      {
+        "from": {
+          "id": "T2",
+          "northing": 712345.011,
+          "easting": 543310.364
+        },
+        "to": {
+          "id": "B",
+          "northing": 712345,
+          "easting": 543310
+        },
+        "distance": 87.9,
+        "bearing": {
+          "degrees": 116,
+          "minutes": 17,
+          "seconds": 35,
+          "decimal": 116.293
+        },
+        "delta_northing": -38.936,
+        "delta_easting": 78.806,
+        "arithmetic_sum_northing": 152,
+        "arithmetic_sum_easting": 250,
+        "northing_misclosure": 151.70767,
+        "easting_misclosure": -250.53902,
+        "observed_angle": {
+          "degrees": 170,
+          "minutes": 22,
+          "seconds": 15
+        },
+        "back_bearing": {
+          "degrees": 305,
+          "minutes": 55,
+          "seconds": 20,
+          "decimal": 305.922
+        },
+        "forward_bearing": {
+          "degrees": 116,
+          "minutes": 17,
+          "seconds": 35,
+          "decimal": 116.293
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": 0
+        }
+      }
+    ],
+    "northing_misclosure": 0,
+    "easting_misclosure": 0
+  },
+  "leveling_rf": {
+    "stations": [
+      {
+        "stn": "BM1",
+        "back_sight": 1.523,
+        "reduced_level": 100,
+        "correction": 0
+      },
+      {
+        "stn": "P1",
+        "intermediate_sight": 1.842,
+        "reduced_level": 99.618,
+        "rise": 0,
+        "fall": 0.319,
+        "correction": -0.063
+      },
+      {
+        "stn": "P2",
+        "back_sight": 1.311,
+        "fore_sight": 2.105,
+        "reduced_level": 99.355,
+        "rise": 0,
+        "fall": 0.263,
+        "correction": -0.063
+      },
+      {
+        "stn": "P3",
+        "intermediate_sight": 1.65,
+        "reduced_level": 98.952,
+        "rise": 0,
+        "fall": 0.339,
+        "correction": -0.127
+      },
+      {
+        "stn": "BM2",
+        "fore_sight": 1.402,
+        "reduced_level": 99.2,
+        "rise": 0.248,
+        "fall": 0,
+        "correction": -0.127
+      }
+    ],
+    "misclosure": 0,
+    "number_of_networks": 2
+  },
+  "leveling_hi": {
+    "stations": [
+      {
+        "stn": "BM1",
+        "back_sight": 1.523,
+        "reduced_level": 100,
+        "height_of_instrument": 101.523,
+        "correction": 0
+      },
+      {
+        "stn": "P1",
+        "intermediate_sight": 1.842,
+        "reduced_level": 99.618,
+        "correction": -0.063
+      },
+      {
+        "stn": "P2",
+        "back_sight": 1.311,
+        "fore_sight": 2.105,
+        "reduced_level": 99.355,
+        "height_of_instrument": 100.729,
+        "correction": -0.063
+      },
+      {
+        "stn": "P3",
+        "intermediate_sight": 1.65,
+        "reduced_level": 98.952,
+        "correction": -0.127
+      },
+      {
+        "stn": "BM2",
+        "fore_sight": 1.402,
+        "reduced_level": 99.2,
+        "correction": -0.127
+      }
+    ],
+    "misclosure": 0,
+    "number_of_networks": 2
+  },
+  "embellishments": {
+    "font_size": 4.2,
+    "beacon_size": 4.2,
+    "label_size": 2.9,
+    "footer_size": 2.9,
+    "point_label_scale": 0.5,
+    "contour_label_scale": 1.6
+  }
+}
