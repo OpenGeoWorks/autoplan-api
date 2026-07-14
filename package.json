@@ -1,67 +1,67 @@
 {
-  "name": "fyp-api",
-  "version": "1.0.0",
-  "description": "FINAL YEAR PROJECT (WEB APPLICATION FOR GEOSPATIAL INDUSTRY)",
-  "homepage": "https://github.com/rajman01/fyp-api#readme",
-  "bugs": {
-    "url": "https://github.com/rajman01/fyp-api/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rajman01/fyp-api.git"
-  },
-  "license": "ISC",
-  "author": "RAJI",
-  "type": "commonjs",
-  "main": "dist/main/server.js",
-  "scripts": {
-    "prettier": "npx prettier --write .",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rimraf dist && copyfiles -u 1 src/**/*.html dist/ && tsc -p tsconfig-build.json",
-    "build:watch": "npm run build -- --watch",
-    "dev": "nodemon -L --watch ./dist ./dist/main/server.js",
-    "start": "node dist/main/server.js"
-  },
-  "dependencies": {
-    "@aws-sdk/client-ses": "^3.888.0",
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
-    "crypto-js": "^4.2.0",
-    "dotenv": "^17.2.0",
-    "express": "^5.1.0",
-    "google-auth-library": "^10.3.0",
-    "handlebars": "^4.7.8",
-    "jsonwebtoken": "^9.0.2",
-    "module-alias": "^2.2.3",
-    "moment": "^2.30.1",
-    "mongoose": "^8.16.4",
-    "phone": "^3.1.66",
-    "rand-token": "^1.0.1",
-    "redis": "^5.6.0",
-    "resend": "^4.7.0",
-    "validatorjs": "^3.22.1",
-    "winston": "^3.17.0"
-  },
-  "devDependencies": {
-    "@flydotio/dockerfile": "^0.7.10",
-    "@types/bcrypt": "^6.0.0",
-    "@types/cors": "^2.8.19",
-    "@types/crypto-js": "^4.2.2",
-    "@types/express": "^5.0.3",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.1.0",
-    "@types/validatorjs": "^3.15.5",
-    "copyfiles": "^2.4.1",
-    "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
-    "typescript": "^5.8.3"
-  },
-  "_moduleAliases": {
-    "@domain": "dist/domain",
-    "@use-cases": "dist/use-cases",
-    "@infra": "dist/infrastructure",
-    "@main": "dist/main",
-    "@adapters": "dist/adapters",
-    "@utils": "dist/utils"
-  }
+    "name": "fyp-api",
+    "version": "1.0.0",
+    "description": "AutoPlan API \u2014 backend for a web application that processes geospatial data for engineering and cadastral surveys",
+    "homepage": "https://github.com/rajman01/fyp-api#readme",
+    "bugs": {
+        "url": "https://github.com/rajman01/fyp-api/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/rajman01/fyp-api.git"
+    },
+    "license": "MIT",
+    "author": "RAJI",
+    "type": "commonjs",
+    "main": "dist/server.js",
+    "scripts": {
+        "start": "node -r module-alias/register dist/server.js",
+        "build": "rimraf dist && copyfiles -u 1 \"src/**/*.html\" dist/ && tsc -p tsconfig-build.json",
+        "build:watch": "tsc -p tsconfig-build.json --watch",
+        "dev": "nodemon --watch src --ext ts,html --exec \"ts-node -r tsconfig-paths/register src/server.ts\"",
+        "prettier": "npx prettier --write .",
+        "test": "ts-node -r tsconfig-paths/register tests/computations.test.ts"
+    },
+    "dependencies": {
+        "@aws-sdk/client-ses": "^3.888.0",
+        "bcrypt": "^6.0.0",
+        "cors": "^2.8.5",
+        "dotenv": "^17.2.0",
+        "express": "^5.1.0",
+        "google-auth-library": "^10.3.0",
+        "handlebars": "^4.7.8",
+        "jsonwebtoken": "^9.0.2",
+        "module-alias": "^2.2.3",
+        "moment": "^2.30.1",
+        "mongoose": "^8.16.4",
+        "phone": "^3.1.66",
+        "rand-token": "^1.0.1",
+        "redis": "^5.6.0",
+        "validatorjs": "^3.22.1",
+        "winston": "^3.17.0"
+    },
+    "devDependencies": {
+        "@types/bcrypt": "^6.0.0",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.3",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^24.1.0",
+        "@types/validatorjs": "^3.15.5",
+        "copyfiles": "^2.4.1",
+        "prettier": "^3.6.2",
+        "rimraf": "^6.0.1",
+        "typescript": "^5.8.3",
+        "ts-node": "^10.9.2",
+        "nodemon": "^3.1.14",
+        "tsconfig-paths": "^4.2.0"
+    },
+    "_moduleAliases": {
+        "@config": "dist/config",
+        "@db": "dist/db",
+        "@middlewares": "dist/middlewares",
+        "@modules": "dist/modules",
+        "@routes": "dist/routes",
+        "@services": "dist/services",
+        "@utils": "dist/utils"
+    }
 }

@@ -1,195 +1,124 @@
-# AutoPlan-API
+# AutoPlan API
 
-Backend API for the AutoPlan Web Application for the Geospatial Industry.
+Backend API for **AutoPlan**, a web application for processing geospatial data in engineering
+and cadastral surveys. It manages users, projects, and survey plans; runs the surveying
+computations (traverse, area, differential leveling); and delegates the actual plan drawing
+to the companion Python service ([autoplan-python](https://github.com/OpenGeoWorks/autoplan-python)),
+which produces DXF/DWG/PDF bundles that can be edited in AutoCAD.
 
-This repository contains a TypeScript + Express API that provides authentication, user/profile management, project and plan management, traverse and leveling computations, and integrations with MongoDB, Redis, AWS SES/Resend for email, and JWT-based auth.
+Built with TypeScript, Express 5, MongoDB (Mongoose), and Redis.
 
-## Table of contents
+## Architecture
 
-- About
-- Quick start
-- Project structure
-- Key concepts & architecture
-- Environment variables
-- Scripts
-- API reference (summary)
-- Development notes
-- Contributing
-- License
+The codebase is a modular monolith: one folder per feature under `src/modules`, each owning
+its routes, validation, controller, service (business logic), Mongoose model, and repository.
 
-## About
+```
+src/
+├── app.ts                  Express app: middleware, routes, error handling
+├── server.ts               Bootstrap: DB/Redis connections, graceful shutdown
+├── config/                 Environment, MongoDB, and Redis setup
+├── db/                     Generic repository (soft deletes, ownership scoping) + query helpers
+├── middlewares/            Authentication, request logging, global error handler
+├── routes/index.ts         Mounts every module router under /api/v1
+├── services/               External integrations (AWS SES email)
+├── templates/              Email templates (Handlebars)
+├── utils/                  Logger, errors, responses, validation, JWT, caches
+└── modules/
+    ├── auth/               OTP + Google sign-in, sessions (JWT + Redis api token)
+    ├── user/               Profiles
+    ├── project/            Survey projects (client, location, surveyor, status)
+    ├── plan/               Survey plans: data editing, generation, computation import/convert
+    ├── traverse/           Back / forward / traverse computations, bearings, area
+    └── leveling/           Differential leveling (rise-and-fall & height-of-instrument)
+```
 
-The API is written in TypeScript and organized with a clean separation between adapters, domain (entities, errors, interfaces), use-cases, and infrastructure. The main entrypoint is `src/main/server.ts`, which wires the dependency container, connects to MongoDB and Redis, and starts the Express server.
+**Request flow**: route → validation (validatorjs) → controller (HTTP concerns) → service
+(business logic) → repository (MongoDB). Errors are thrown as `ApiError` anywhere in the
+chain and rendered by the global error handler.
 
-Its primary features include:
+**Response envelope** (all endpoints): `{ code, error, message?, data? }`.
 
-- Authentication (OTP login, Google OAuth, JWT)
-- User profile management
-- Project CRUD
-- Plan creation and editing (coordinates, elevations, parcels, topo settings)
-- Traverse and leveling computations (forward/back computation, traverse computation, differential leveling)
+**Authentication** uses two credentials together: a signed, AES-encrypted JWT
+(`Authorization: Bearer <token>`) and a revocable Redis-backed token (`x-api-token`).
+Logging out revokes the api token.
 
-## Quick start
+## Surveying computations
 
-Prerequisites:
+- **Back computation** — distances, whole-circle bearings, and (optionally) parcel area
+  from known coordinates (shoelace method).
+- **Forward computation** — station coordinates from bearing/distance legs, with linear
+  misclosure detection and optional correction distributed by cumulative arithmetic sums.
+- **Traverse computation** — carries bearings through observed angles from known control,
+  distributes angular misclosure across legs when a check leg closes the traverse, then runs
+  a forward computation for coordinates.
+- **Differential leveling** — rise-and-fall or height-of-instrument reduction, with optional
+  misclosure correction distributed per instrument setup.
 
-- Node.js (v18+ recommended)
-- npm
-- A running MongoDB instance (or connection URI)
-- A Redis instance (for caching)
+`tests/computations.test.ts` locks these engines against golden fixtures — run `npm test`
+after touching any of them.
 
-1. Install dependencies
+## API overview
+
+All routes are mounted under `/api/v1`. 🔒 = requires authentication.
+
+| Area | Route | Description |
+|------|-------|-------------|
+| Auth | `POST /auth/login/otp` | Email an OTP (creates the account on first login) |
+| | `POST /auth/login` | Exchange email + OTP for a session |
+| | `POST /auth/login/google` | Sign in with a Google ID token |
+| | `GET /auth/logout` 🔒 | Revoke the current api token |
+| User | `POST /user/profile/set` 🔒 · `GET /user/profile/fetch` 🔒 | Profile management |
+| Project | `POST /project/create` 🔒 · `GET /project/list` 🔒 · `GET /project/fetch/:id` 🔒 · `PUT /project/edit/:id` 🔒 · `DELETE /project/delete/:id` 🔒 | Project CRUD |
+| Plan | `POST /plan/create` 🔒 · `GET /plan/list/:project_id` 🔒 · `GET /plan/fetch/:plan_id` 🔒 · `PUT /plan/edit/:plan_id` 🔒 · `DELETE /plan/delete/:plan_id` 🔒 | Plan CRUD |
+| | `PUT /plan/{coordinates,elevations,parcels}/edit/:plan_id` 🔒 | Survey data |
+| | `PUT /plan/topo/{boundary,setting}/edit/:plan_id` 🔒 | Topographic data |
+| | `PUT /plan/layout/boundary/edit/:plan_id` 🔒 | Layout perimeter (auto-closed ring) |
+| | `PUT /plan/layout/params/edit/:plan_id` 🔒 | Layout design parameters (plot module, roads, blocks, reserves) |
+| | `PUT /plan/layout/data/edit/:plan_id` 🔒 | Designed layout data: coordinate register, plots, roads |
+| | `PUT /plan/route/longitudinal/params/edit/:plan_id` 🔒 | Route profile parameters |
+| | `PUT /plan/route/params/edit/:plan_id` 🔒 | Route plan-view parameters (right-of-way, toggles) |
+| | `PUT /plan/{traverse,forward,differential-leveling}-data/edit/:plan_id` 🔒 | Field computations |
+| | `GET /plan/generate/:plan_id` 🔒 | Generate the drawing (Python service) |
+| | `PUT /plan/computation/convert/:plan_id` 🔒 | Convert a computation into a plan |
+| | `PUT /plan/import/:plan_id` 🔒 | Import a computation into a plan |
+| Compute | `POST /traverse/back-computation` · `POST /traverse/forward-computation` · `POST /traverse/traverse-computation` · `POST /traverse/area-computation` | Stateless traverse computations |
+| | `POST /leveling/differential` | Stateless leveling reduction |
+
+## Getting started
+
+Requirements: Node.js 22+, MongoDB, Redis.
 
 ```bash
 npm install
+cp .env.example .env    # fill in your values
+
+npm run dev             # ts-node + nodemon
+npm test                # computation regression tests
+npm run build && npm start
 ```
-
-2. Create an `.env` file at the project root. See the Environment variables section below for required keys.
-
-3. Build the project
-
-```bash
-npm run build
-```
-
-4. Start the server (production build)
-
-```bash
-npm start
-```
-
-For local development you can build and run the output with nodemon (the repo uses a dist-first dev workflow):
-
-```bash
-npm run build:watch   # compile in watch mode
-npm run dev           # run the compiled server with nodemon
-```
-
-The API will be available at http://localhost:3000 (or the port defined in your `.env`). Health check: `GET /health`.
-
-## Project structure
-
-Top-level folders and a short description of their responsibilities:
-
-- `src/main` — application wiring, server/bootstrap, routes, adapters and DI container.
-- `src/adapters` — controllers, cache adapters, and other framework adapters.
-- `src/domain` — core entities, types, errors and domain interfaces.
-- `src/use-cases` — application business logic (authentication, plan/project operations, computations).
-- `src/infrastructure` — concrete implementations for DB, redis, cryptography, email (SES/Resend), validator utilities, and configuration.
-- `src/repositories` — data access abstractions and implementations.
-- `src/utils` — utility functions such as distance calculations.
-
-Important entry files:
-
-- `src/main/server.ts` — program entrypoint.
-- `src/main/app.ts` — express app setup and route mounting.
-- `src/infrastructure/config/env.ts` — environment parsing and exported constants.
-
-## Key concepts & architecture
-
-The app uses dependency injection (a container defined in `src/main/config/container.ts`) to wire controllers, repositories, and adapters. The codebase follows a hexagonal/clean architecture style:
-
-- Controllers (adapters) translate HTTP requests into use-case calls.
-- Use-cases contain application-specific business logic.
-- Repositories provide persistence abstractions used by use-cases.
-- Infrastructure provides concrete implementations (MongoDB, Redis, email, JWT, bcrypt).
-
-Express routes are defined under `src/main/routes` and are mounted under the base path `/api/v1` in `App.setupRoutes()`.
 
 ## Environment variables
 
-Create an `.env` file with the following keys (the app reads them from `src/infrastructure/config/env.ts`):
+| Variable | Purpose |
+|----------|---------|
+| `PORT` | HTTP port (default 3000) |
+| `MONGO_URI` | MongoDB connection string |
+| `REDIS_URI` | Redis connection string |
+| `JWT_SECRET` | EC (ES256) private key in PEM format, `\n`-escaped |
+| `ENCRYPTION_KEY` | 32-byte hex key for AES-256-GCM payload encryption |
+| `GOOGLE_CLIENT_ID` | OAuth client id for Google sign-in |
+| `PYTHON_SERVER` | Base URL of the plan-drawing Python service |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins, or `*` |
+| `AWS_ACCESS_KEY` / `AWS_SECRET_KEY` / `AWS_REGION` / `AWS_SES_SENDER` | SES credentials for OTP emails |
 
-- PORT — server port (default 3000)
-- JWT_SECRET — RSA/PEM string or symmetric secret used for JWT signing
-- ENCRYPTION_KEY — key for additional symmetric encryption used in the app
-- MONGO_URI — mongo connection string
-- REDIS_URI — redis connection string
-- RESEND_API_KEY — API key for resend.email (optional)
-- AWS_SECRET_KEY — AWS secret access key (optional, used for SES)
-- AWS_ACCESS_KEY — AWS access key id (optional)
-- AWS_BUCKET — S3 bucket name (optional)
-- AWS_REGION — AWS region (optional)
-- AWS_SES_SENDER — Verified sender email for SES (optional)
+## Deployment
 
-Note: `JWT_SECRET` is parsed using `parsePemKey` helper (turns literal `\n` into newlines). If you use multi-line PEMs in an env file, escape newlines as `\n`.
-
-## Scripts
-
-- `npm run build` — cleans `dist`, copies html assets and runs `tsc` with `tsconfig-build.json` (produces `dist`).
-- `npm run build:watch` — builds in watch mode.
-- `npm run dev` — runs `nodemon` on the compiled `dist/main/server.js` (the repo uses a dist-first dev workflow).
-- `npm start` — runs the compiled server from `dist`.
-
-## API reference (summary)
-
-All API endpoints are mounted under `/api/v1`.
-
-Auth
-
-- POST /api/v1/auth/login/otp — Send login OTP
-- POST /api/v1/auth/login — Login with credentials or OTP
-- POST /api/v1/auth/login/google — Login with Google
-- GET /api/v1/auth/logout — Logout (protected)
-
-User (protected)
-
-- POST /api/v1/user/profile/set — Set or update profile
-- GET /api/v1/user/profile/fetch — Fetch user profile
-
-Project (protected)
-
-- POST /api/v1/project/create — Create project
-- GET /api/v1/project/list — List projects
-- GET /api/v1/project/fetch/:project_id — Fetch project by id
-- PUT /api/v1/project/edit/:project_id — Edit project
-- DELETE /api/v1/project/delete/:project_id — Delete project
-
-Plan (protected)
-
-- POST /api/v1/plan/create — Create plan
-- GET /api/v1/plan/list/:project_id — List plans for project
-- GET /api/v1/plan/fetch/:plan_id — Fetch plan
-- PUT /api/v1/plan/edit/:plan_id — Edit plan
-- PUT /api/v1/plan/coordinates/edit/:plan_id — Edit coordinates
-- PUT /api/v1/plan/elevations/edit/:plan_id — Edit elevations
-- PUT /api/v1/plan/parcels/edit/:plan_id — Edit parcels
-- PUT /api/v1/plan/topo/boundary/edit/:plan_id — Edit topo boundary
-- PUT /api/v1/plan/topo/setting/edit/:plan_id — Edit topo setting
-- PUT /api/v1/plan/route/longitudinal/params/edit/:plan_id — Edit longitudinal profile parameters
-- PUT /api/v1/plan/traverse-data/edit/:plan_id — Edit traverse computation data
-- PUT /api/v1/plan/forward-data/edit/:plan_id — Edit forward computation data
-- PUT /api/v1/plan/differential-leveling-data/edit/:plan_id — Edit differential leveling data
-- GET /api/v1/plan/generate/:plan_id — Generate plan (export/compute)
-
-Traverse & Leveling (some endpoints may be unprotected by default in routes)
-
-- POST /api/v1/traverse/back-computation
-- POST /api/v1/traverse/forward-computation
-- POST /api/v1/traverse/traverse-computation
-- POST /api/v1/leveling/differential
-
-For request/response shapes, consult the controllers in `src/adapters/controllers` and the use-cases under `src/use-cases`.
-
-## Development notes
-
-- The project uses module-alias mappings for runtime; in production those point to `dist/*` (configured in `package.json` under `_moduleAliases`).
-- The TypeScript build target is configured in `tsconfig-build.json` — the compiled code is placed into `dist` and the app expects `dist/main/server.js` as the entry.
-- The DI container is defined at `src/main/config/container.ts` — register additional implementations there if you add services.
-
-## Contributing
-
-If you want to contribute, please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make changes and add unit tests where appropriate
-4. Open a PR describing your changes
-
-Automated tests are currently absent from this repository. It is strongly recommended to implement unit and integration tests for critical features such as authentication, computations, and data operations. Contributors are encouraged to include relevant tests with their changes to improve reliability and maintainability.
+Pushes to `main` trigger `.github/workflows/prod.yml`: the Docker image is built and pushed
+to Docker Hub, then deployed to the production Ubuntu server over SSH with Docker Compose.
+Required secrets: `DOCKER_USERNAME`, `DOCKER_PASSWORD`, `SERVER_HOST`, `SERVER_USERNAME`,
+`SERVER_SSH_KEY`, `SERVER_PORT`.
 
 ## License
 
-This repository is licensed under ISC (see `package.json`).
-
----
+MIT — see [LICENSE](LICENSE).

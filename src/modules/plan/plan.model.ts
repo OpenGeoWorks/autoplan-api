@@ -1,0 +1,387 @@
+import { Document, Schema, Model, model } from 'mongoose';
+import { BeaconType, IPlan, PageOrientation, PageSize, PlanOrigin, PlanType } from './plan.interface';
+
+export interface PlanDocument extends Document, Omit<IPlan, 'id'> {
+    id: string;
+    deleted: boolean;
+}
+
+const coordinateSchema = new Schema(
+    {
+        id: String,
+        northing: Number,
+        easting: Number,
+        elevation: Number,
+    },
+    { _id: false },
+);
+
+const elevationSchema = new Schema(
+    {
+        id: String,
+        elevation: Number,
+        chainage: String,
+    },
+    { _id: false },
+);
+
+const parcelSchema = new Schema(
+    {
+        name: String,
+        ids: [String],
+    },
+    { _id: false },
+);
+
+const bearingSchema = new Schema(
+    {
+        degrees: Number,
+        minutes: Number,
+        seconds: Number,
+        decimal: Number,
+    },
+    { _id: false },
+);
+
+const traverseLegSchema = new Schema(
+    {
+        from: coordinateSchema,
+        to: coordinateSchema,
+        observed_angle: bearingSchema,
+        bearing: bearingSchema,
+        distance: Number,
+    },
+    { _id: false },
+);
+
+const levelingStationSchema = new Schema(
+    {
+        stn: String,
+        chainage: String,
+        back_sight: Number,
+        intermediate_sight: Number,
+        fore_sight: Number,
+        reduced_level: Number,
+        rise: Number,
+        fall: Number,
+        height_of_instrument: Number,
+        correction: Number,
+    },
+    { _id: false },
+);
+
+const forwardComputationSchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        start: coordinateSchema,
+        legs: [traverseLegSchema],
+        misclosure_correction: Boolean,
+    },
+    { _id: false },
+);
+
+const traverseComputationSchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        legs: [traverseLegSchema],
+        misclosure_correction: Boolean,
+    },
+    { _id: false },
+);
+
+const differentialLevelingSchema = new Schema(
+    {
+        stations: [levelingStationSchema],
+        method: {
+            type: String,
+            enum: ['rise-and-fall', 'height-of-instrument'],
+        },
+        misclosure_correction: Boolean,
+    },
+    { _id: false },
+);
+
+const topographicBoundarySchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        area: Number,
+    },
+    { _id: false },
+);
+
+const topographicSettingSchema = new Schema(
+    {
+        show_spot_heights: Boolean,
+        point_label_scale: Number,
+        show_contours: Boolean,
+        contour_interval: Number,
+        major_contour: Number,
+        minimum_distance: Number, // 0.1 to 0.5
+        show_contours_labels: Boolean,
+        contour_label_scale: Number,
+        show_boundary: Boolean,
+        boundary_label_scale: Number,
+        tin: Boolean,
+        grid: Boolean,
+        show_mesh: Boolean,
+    },
+    { _id: false },
+);
+
+const longitudinalProfileParametersSchema = new Schema(
+    {
+        horizontal_scale: Number,
+        vertical_scale: Number,
+        profile_origin: [Number],
+        station_interval: Number,
+        elevation_interval: Number,
+        starting_chainage: Number,
+    },
+    { _id: false },
+);
+
+const routeParametersSchema = new Schema(
+    {
+        right_of_way_width: { type: Number, default: 30 },
+        show_plan_view: { type: Boolean, default: true },
+        show_chainage_labels: { type: Boolean, default: true },
+    },
+    { _id: false },
+);
+
+const layoutBoundarySchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        area: Number,
+    },
+    { _id: false },
+);
+
+const layoutPlotSchema = new Schema(
+    {
+        block: String,
+        number: Schema.Types.Mixed, // 1 or "1A"
+        ids: [String],
+        area: Number,
+        use: {
+            type: String,
+            default: 'residential',
+        },
+    },
+    { _id: false },
+);
+
+const layoutRoadSchema = new Schema(
+    {
+        name: String,
+        width: Number,
+        centerline_ids: [String],
+    },
+    { _id: false },
+);
+
+const layoutParametersSchema = new Schema(
+    {
+        plot: {
+            frontage: { type: Number, default: 15 },
+            depth: { type: Number, default: 30 },
+            min_area: { type: Number, default: 400 },
+            remainder_strategy: { type: String, default: 'add_to_last' },
+        },
+        roads: {
+            major_width: { type: Number, default: 15 },
+            collector_width: { type: Number, default: 12 },
+            access_width: { type: Number, default: 9 },
+            corner_radius: { type: Number, default: 6 },
+            major_road_name: { type: String, default: '' },
+        },
+        blocks: {
+            double_loaded: { type: Boolean, default: true },
+            max_length: { type: Number, default: 180 },
+            orientation: { type: String, default: 'auto' },
+        },
+        reserves: {
+            open_space_percent: { type: Number, default: 10 },
+            commercial_along_major: { type: Boolean, default: true },
+            facilities: { type: [String], default: [] },
+        },
+        numbering: {
+            scheme: { type: String, default: 'block_plot' },
+            block_labels: { type: String, default: 'alphabetic' },
+            plot_start: { type: Number, default: 1 },
+        },
+    },
+    { _id: false, minimize: false },
+);
+
+const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
+    {
+        user: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+        project: {
+            type: Schema.Types.ObjectId,
+            ref: 'Project',
+            required: true,
+        },
+        name: {
+            type: String,
+            required: true,
+        },
+        type: {
+            type: String,
+            enum: Object.values(PlanType),
+        },
+        font: {
+            type: String,
+            default: 'Arial',
+        },
+        font_size: {
+            type: Number,
+            default: 12,
+        },
+        coordinates: {
+            type: [coordinateSchema],
+            default: [],
+        },
+        elevations: {
+            type: [elevationSchema],
+            default: [],
+        },
+        parcels: {
+            type: [parcelSchema],
+            default: [],
+        },
+        title: {
+            type: String,
+            default: '',
+        },
+        address: {
+            type: String,
+            default: '',
+        },
+        local_govt: {
+            type: String,
+            default: '',
+        },
+        state: {
+            type: String,
+            default: '',
+        },
+        plan_number: {
+            type: String,
+            default: '',
+        },
+        origin: {
+            type: String,
+            enum: Object.values(PlanOrigin),
+            default: PlanOrigin.UTM_ZONE_31,
+        },
+        scale: {
+            type: Number,
+            default: 1000,
+        },
+        beacon_type: {
+            type: String,
+            enum: Object.values(BeaconType),
+            default: BeaconType.NONE,
+        },
+        beacon_size: {
+            type: Number,
+            default: 0.3,
+        },
+        label_size: {
+            type: Number,
+            default: 0.2,
+        },
+        personel_name: {
+            type: String,
+            default: '',
+        },
+        surveyor_name: {
+            type: String,
+            default: '',
+        },
+        forward_computation_data: {
+            type: forwardComputationSchema,
+        },
+        traverse_computation_data: {
+            type: traverseComputationSchema,
+        },
+        differential_leveling_data: {
+            type: differentialLevelingSchema,
+        },
+        page_size: {
+            type: String,
+            enum: Object.values(PageSize),
+            default: PageSize.A4,
+        },
+        page_orientation: {
+            type: String,
+            enum: Object.values(PageOrientation),
+            default: PageOrientation.PORTRAIT,
+        },
+        topographic_boundary: {
+            type: topographicBoundarySchema,
+        },
+        topographic_setting: {
+            type: topographicSettingSchema,
+        },
+        layout_boundary: {
+            type: layoutBoundarySchema,
+        },
+        layout_parameters: {
+            type: layoutParametersSchema,
+        },
+        plots: {
+            type: [layoutPlotSchema],
+            default: undefined,
+        },
+        roads: {
+            type: [layoutRoadSchema],
+            default: undefined,
+        },
+        footers: {
+            type: [String],
+            default: [],
+        },
+        footer_size: {
+            type: Number,
+            default: 0.5,
+        },
+        longitudinal_profile_parameters: {
+            type: longitudinalProfileParametersSchema,
+        },
+        route_parameters: {
+            type: routeParametersSchema,
+        },
+        dxf_version: {
+            type: String,
+            default: 'R2000',
+        },
+        computation_only: {
+            type: Boolean,
+            default: false,
+        },
+        deleted: {
+            type: Boolean,
+            select: false,
+            default: false,
+        },
+    },
+    {
+        id: true,
+        timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
+        minimize: false,
+    },
+);
+
+PlanSchema.index(
+    { name: 'text', title: 'text', plan_number: 'text' },
+    { name: 'default', default_language: 'en', language_override: 'en' },
+);
+
+const Plan: Model<PlanDocument> = model<PlanDocument>('Plan', PlanSchema);
+export default Plan;
