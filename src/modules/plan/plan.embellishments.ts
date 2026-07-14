@@ -167,8 +167,8 @@ export const computeRouteEmbellishments = (plan: RouteEmbellishmentInput): PlanE
     }
 
     // Route sheets use content-fitted margins (see the drawing service):
-    // 8% side margins, 21% of width on top, bottom solved for the footer band.
-    const marginTop = sheetWidth * 0.21;
+    // 8% side margins, 26% of width on top, bottom solved for the footer band.
+    const marginTop = sheetWidth * 0.26;
     const marginBottom = (0.18 * (sheetHeight + marginTop) + sheetWidth * 0.03) / (1 - 0.18);
     return sizesFromFrame(sheetWidth * 1.16, sheetHeight + marginTop + marginBottom);
 };
