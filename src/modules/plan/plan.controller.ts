@@ -8,8 +8,12 @@ import {
     CreatePlanInput,
     EditPlanInput,
     ImportComputationInput,
+    LayoutBoundary,
+    LayoutDataInput,
+    LayoutParameters,
     LongitudinalProfileParameters,
     PlanType,
+    RouteParameters,
     TopographicBoundary,
     TopographicSetting,
 } from './plan.interface';
@@ -175,6 +179,46 @@ export const editLongitudinalProfileParametersController = catchAsync(async (req
         req.params.plan_id,
         req.body as LongitudinalProfileParameters,
         ownerOptions(req, { longitudinal_profile_parameters: 1 }),
+    );
+    sendSuccess(res, plan);
+});
+
+export const editRouteParametersController = catchAsync(async (req: Request, res: Response) => {
+    validate.validateEditRouteParameters(req);
+    const plan = await planService.editRouteParameters(
+        req.params.plan_id,
+        req.body as RouteParameters,
+        ownerOptions(req, { route_parameters: 1 }),
+    );
+    sendSuccess(res, plan);
+});
+
+export const editLayoutBoundaryController = catchAsync(async (req: Request, res: Response) => {
+    validate.validateEditLayoutBoundary(req);
+    const plan = await planService.editLayoutBoundary(
+        req.params.plan_id,
+        req.body as LayoutBoundary,
+        ownerOptions(req, { layout_boundary: 1 }),
+    );
+    sendSuccess(res, plan);
+});
+
+export const editLayoutParametersController = catchAsync(async (req: Request, res: Response) => {
+    validate.validateEditLayoutParameters(req);
+    const plan = await planService.editLayoutParameters(
+        req.params.plan_id,
+        req.body as LayoutParameters,
+        ownerOptions(req, { layout_parameters: 1 }),
+    );
+    sendSuccess(res, plan);
+});
+
+export const editLayoutDataController = catchAsync(async (req: Request, res: Response) => {
+    validate.validateEditLayoutData(req);
+    const plan = await planService.editLayoutData(
+        req.params.plan_id,
+        req.body as LayoutDataInput,
+        ownerOptions(req, { coordinates: 1, plots: 1, roads: 1 }),
     );
     sendSuccess(res, plan);
 });

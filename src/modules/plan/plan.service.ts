@@ -7,7 +7,7 @@ import { backComputation, forwardComputation, traverseComputation } from '@modul
 import { differentialLeveling } from '@modules/leveling/leveling.service';
 import projectRepository from '@modules/project/project.repository';
 import planRepository from './plan.repository';
-import { computePlanEmbellishments } from './plan.embellishments';
+import { computePlanEmbellishments, computeRouteEmbellishments, PlanEmbellishments } from './plan.embellishments';
 import {
     BeaconType,
     CreatePlanInput,
@@ -15,12 +15,16 @@ import {
     ElevationProps,
     IPlan,
     ImportComputationInput,
+    LayoutBoundary,
+    LayoutDataInput,
+    LayoutParameters,
     LongitudinalProfileParameters,
     PageOrientation,
     PageSize,
     ParcelProps,
     PlanOrigin,
     PlanType,
+    RouteParameters,
     TopographicBoundary,
     TopographicSetting,
 } from './plan.interface';
@@ -49,6 +53,28 @@ const defaultLongitudinalProfileParameters = (): LongitudinalProfileParameters =
     elevation_interval: 1.0,
     starting_chainage: 0.0,
 });
+
+const defaultRouteParameters = (): RouteParameters => ({
+    right_of_way_width: 30,
+    show_plan_view: true,
+    show_chainage_labels: true,
+});
+
+const defaultLayoutParameters = (): LayoutParameters => ({
+    plot: { frontage: 15, depth: 30, min_area: 400, remainder_strategy: 'add_to_last' },
+    roads: { major_width: 15, collector_width: 12, access_width: 9, corner_radius: 6, major_road_name: '' },
+    blocks: { double_loaded: true, max_length: 180, orientation: 'auto' },
+    reserves: { open_space_percent: 10, commercial_along_major: true, facilities: [] },
+    numbering: { scheme: 'block_plot', block_labels: 'alphabetic', plot_start: 1 },
+});
+
+const applySizes = (update: Partial<IPlan>, embellishments: PlanEmbellishments | null): void => {
+    if (!embellishments) return;
+    update.font_size = embellishments.font_size;
+    update.beacon_size = embellishments.beacon_size;
+    update.label_size = embellishments.label_size;
+    update.footer_size = embellishments.footer_size;
+};
 
 const requirePlan = (plan: IPlan | null): IPlan => {
     if (!plan) throw ApiError.notFound('Plan not found');
@@ -97,6 +123,11 @@ export const createPlan = async (data: CreatePlanInput, options?: RepoOptions): 
 
     if (planData.type === PlanType.ROUTE) {
         planData.longitudinal_profile_parameters = defaultLongitudinalProfileParameters();
+        planData.route_parameters = defaultRouteParameters();
+    }
+
+    if (planData.type === PlanType.LAYOUT) {
+        planData.layout_parameters = defaultLayoutParameters();
     }
 
     return planRepository.createPlan(planData);
@@ -142,11 +173,30 @@ export const editCoordinates = async (
     const plan = requirePlan(
         await planRepository.getPlanById(id, {
             filter: options?.filter,
-            projection: { type: 1, topographic_boundary: 1, topographic_setting: 1 },
+            projection: {
+                type: 1,
+                topographic_boundary: 1,
+                topographic_setting: 1,
+                elevations: 1,
+                longitudinal_profile_parameters: 1,
+                route_parameters: 1,
+            },
         }),
     );
 
     const updatedCoordinates = dedupeById(coordinates);
+    const update: Partial<IPlan> = { coordinates: updatedCoordinates };
+
+    if (plan.type === PlanType.ROUTE) {
+        // Route sheets are sized by their drawn views, not a boundary
+        applySizes(update, computeRouteEmbellishments({
+            elevations: plan.elevations,
+            coordinates: updatedCoordinates,
+            longitudinal_profile_parameters: plan.longitudinal_profile_parameters,
+            route_parameters: plan.route_parameters,
+        }));
+        return requirePlan(await planRepository.editPlan(id, update, options));
+    }
 
     // Element sizes derive from the full extent of the drawing, so include
     // the topographic boundary when there is one.
@@ -155,14 +205,9 @@ export const editCoordinates = async (
         embellishmentCoordinates.push(...plan.topographic_boundary.coordinates);
     }
 
-    const update: Partial<IPlan> = { coordinates: updatedCoordinates };
-
     if (embellishmentCoordinates.length > 0) {
         const embellishments = computePlanEmbellishments(embellishmentCoordinates);
-        update.font_size = embellishments.font_size;
-        update.beacon_size = embellishments.beacon_size;
-        update.label_size = embellishments.label_size;
-        update.footer_size = embellishments.footer_size;
+        applySizes(update, embellishments);
 
         if (plan.type === PlanType.TOPOGRAPHIC && plan.topographic_setting) {
             plan.topographic_setting.point_label_scale = embellishments.point_label_scale;
@@ -180,11 +225,23 @@ export const editElevations = async (
     options?: RepoOptions,
 ): Promise<IPlan> => {
     const plan = requirePlan(
-        await planRepository.getPlanById(id, { filter: options?.filter, projection: { type: 1 } }),
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, coordinates: 1, longitudinal_profile_parameters: 1, route_parameters: 1 },
+        }),
     );
     requireType(plan, PlanType.ROUTE, 'route survey');
 
-    return requirePlan(await planRepository.editPlan(id, { elevations: dedupeById(elevations) }, options));
+    const updatedElevations = dedupeById(elevations);
+    const update: Partial<IPlan> = { elevations: updatedElevations };
+    applySizes(update, computeRouteEmbellishments({
+        elevations: updatedElevations,
+        coordinates: plan.coordinates,
+        longitudinal_profile_parameters: plan.longitudinal_profile_parameters,
+        route_parameters: plan.route_parameters,
+    }));
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
 };
 
 export const editParcels = async (id: string, parcels: ParcelProps[], options?: RepoOptions): Promise<IPlan> => {
@@ -282,11 +339,158 @@ export const editLongitudinalProfileParameters = async (
     options?: RepoOptions,
 ): Promise<IPlan> => {
     const plan = requirePlan(
-        await planRepository.getPlanById(id, { filter: options?.filter, projection: { type: 1 } }),
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, elevations: 1, coordinates: 1, route_parameters: 1 },
+        }),
     );
     requireType(plan, PlanType.ROUTE, 'route');
 
-    return requirePlan(await planRepository.editPlan(id, { longitudinal_profile_parameters: params }, options));
+    const update: Partial<IPlan> = { longitudinal_profile_parameters: params };
+    applySizes(update, computeRouteEmbellishments({
+        elevations: plan.elevations,
+        coordinates: plan.coordinates,
+        longitudinal_profile_parameters: params,
+        route_parameters: plan.route_parameters,
+    }));
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
+};
+
+export const editRouteParameters = async (
+    id: string,
+    params: RouteParameters,
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, elevations: 1, coordinates: 1, longitudinal_profile_parameters: 1 },
+        }),
+    );
+    requireType(plan, PlanType.ROUTE, 'route');
+
+    const update: Partial<IPlan> = { route_parameters: params };
+    applySizes(update, computeRouteEmbellishments({
+        elevations: plan.elevations,
+        coordinates: plan.coordinates,
+        longitudinal_profile_parameters: plan.longitudinal_profile_parameters,
+        route_parameters: params,
+    }));
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
+};
+
+// ---------------------------------------------------------------------------
+// Layout (estate subdivision) data editing
+// ---------------------------------------------------------------------------
+
+export const editLayoutBoundary = async (
+    id: string,
+    boundary: LayoutBoundary,
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, coordinates: 1 },
+        }),
+    );
+    requireType(plan, PlanType.LAYOUT, 'layout');
+
+    const uniqueIds = new Set(boundary.coordinates.map(point => point.id));
+    if (uniqueIds.size < 3) {
+        throw ApiError.badRequest('A boundary must have at least 3 unique points');
+    }
+
+    // Close the boundary polygon when the caller has not
+    const coords = boundary.coordinates;
+    if (coords.length > 0 && coords[0].id !== coords[coords.length - 1].id) {
+        coords.push(coords[0]);
+    }
+
+    const embellishments = computePlanEmbellishments([...coords, ...(plan.coordinates || [])]);
+
+    const update: Partial<IPlan> = {
+        layout_boundary: boundary,
+        font_size: embellishments.font_size,
+        beacon_size: embellishments.beacon_size,
+        label_size: embellishments.label_size,
+        footer_size: embellishments.footer_size,
+    };
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
+};
+
+export const editLayoutParameters = async (
+    id: string,
+    params: LayoutParameters,
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, { filter: options?.filter, projection: { type: 1 } }),
+    );
+    requireType(plan, PlanType.LAYOUT, 'layout');
+
+    return requirePlan(await planRepository.editPlan(id, { layout_parameters: params }, options));
+};
+
+/**
+ * Edit a layout's designed data (draw mode): the plot corner coordinate
+ * register, the plots (corner ids per plot), and optional roads. Every plot
+ * corner and road centerline id must resolve to a coordinate in the register
+ * or the layout boundary.
+ */
+export const editLayoutData = async (id: string, data: LayoutDataInput, options?: RepoOptions): Promise<IPlan> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, coordinates: 1, layout_boundary: 1 },
+        }),
+    );
+    requireType(plan, PlanType.LAYOUT, 'layout');
+
+    const update: Partial<IPlan> = {};
+
+    const register = new Set<string>();
+    const coordinates = data.coordinates ? dedupeById(data.coordinates) : (plan.coordinates ?? []);
+    for (const coord of coordinates) register.add(coord.id);
+    for (const coord of plan.layout_boundary?.coordinates ?? []) register.add(coord.id);
+
+    if (data.coordinates) {
+        update.coordinates = coordinates;
+    }
+
+    if (data.plots) {
+        for (const plot of data.plots) {
+            if (!plot.ids || plot.ids.length < 3) {
+                throw ApiError.badRequest(`Plot ${plot.block ?? ''} ${plot.number ?? ''} must have at least 3 corner ids`);
+            }
+            for (const pid of plot.ids) {
+                if (!register.has(pid)) {
+                    throw ApiError.badRequest(`Plot ${plot.block ?? ''} ${plot.number ?? ''} references unknown coordinate id '${pid}'`);
+                }
+            }
+        }
+        update.plots = data.plots;
+    }
+
+    if (data.roads) {
+        for (const road of data.roads) {
+            for (const pid of road.centerline_ids ?? []) {
+                if (!register.has(pid)) {
+                    throw ApiError.badRequest(`Road '${road.name ?? ''}' references unknown coordinate id '${pid}'`);
+                }
+            }
+        }
+        update.roads = data.roads;
+    }
+
+    if (Object.keys(update).length === 0) {
+        throw ApiError.badRequest('Provide coordinates, plots, or roads to edit');
+    }
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
 };
 
 // ---------------------------------------------------------------------------
@@ -322,6 +526,12 @@ export const generatePlan = async (id: string, options?: RepoOptions): Promise<{
         }
     }
 
+    if (plan.type === PlanType.LAYOUT && plan.layout_boundary?.coordinates?.length) {
+        const result = backComputation({ points: plan.layout_boundary.coordinates, area: true, round: true });
+        plan.layout_boundary.legs = result.traverse_legs;
+        plan.layout_boundary.area = result.traverse.area;
+    }
+
     const response = await fetch(`${env.PYTHON_SERVER}/${plan.type}/plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -353,7 +563,7 @@ const applyComputationsToPlan = async (
         // to the station order (A, P1, P2, ...) before writing them.
         const coordinates = dedupeById(raw);
 
-        if (plan.type === PlanType.CADASTRAL || plan.type === PlanType.LAYOUT) {
+        if (plan.type === PlanType.CADASTRAL) {
             const merged = replace ? coordinates : [...coordinates, ...(plan.coordinates ?? [])];
             await editCoordinates(plan.id, merged);
         }
@@ -362,6 +572,12 @@ const applyComputationsToPlan = async (
             const existing = plan.topographic_boundary?.coordinates ?? [];
             const merged = replace ? coordinates : [...coordinates, ...existing];
             await editTopoBoundary(plan.id, { coordinates: merged });
+        }
+
+        if (plan.type === PlanType.LAYOUT) {
+            const existing = plan.layout_boundary?.coordinates ?? [];
+            const merged = replace ? coordinates : [...coordinates, ...existing];
+            await editLayoutBoundary(plan.id, { coordinates: merged });
         }
     };
 

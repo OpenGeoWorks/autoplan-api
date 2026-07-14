@@ -447,7 +447,7 @@
   "embellishments": {
     "font_size": 4.2,
     "beacon_size": 4.2,
-    "label_size": 2.9,
+    "label_size": 2.3,
     "footer_size": 2.9,
     "point_label_scale": 0.5,
     "contour_label_scale": 1.6

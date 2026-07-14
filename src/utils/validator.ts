@@ -136,6 +136,12 @@ class ValidatorJS {
         );
 
         register(
+            'string_or_numeric',
+            (value: unknown) => typeof value === 'string' || typeof value === 'number',
+            'The :attribute must be a string or a number.',
+        );
+
+        register(
             'date_format',
             (value: unknown, requirement: string) => moment(value as string, requirement, true).isValid(),
             'The :attribute does not match the correct format.',

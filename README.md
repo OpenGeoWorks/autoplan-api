@@ -73,12 +73,16 @@ All routes are mounted under `/api/v1`. 🔒 = requires authentication.
 | Plan | `POST /plan/create` 🔒 · `GET /plan/list/:project_id` 🔒 · `GET /plan/fetch/:plan_id` 🔒 · `PUT /plan/edit/:plan_id` 🔒 · `DELETE /plan/delete/:plan_id` 🔒 | Plan CRUD |
 | | `PUT /plan/{coordinates,elevations,parcels}/edit/:plan_id` 🔒 | Survey data |
 | | `PUT /plan/topo/{boundary,setting}/edit/:plan_id` 🔒 | Topographic data |
+| | `PUT /plan/layout/boundary/edit/:plan_id` 🔒 | Layout perimeter (auto-closed ring) |
+| | `PUT /plan/layout/params/edit/:plan_id` 🔒 | Layout design parameters (plot module, roads, blocks, reserves) |
+| | `PUT /plan/layout/data/edit/:plan_id` 🔒 | Designed layout data: coordinate register, plots, roads |
 | | `PUT /plan/route/longitudinal/params/edit/:plan_id` 🔒 | Route profile parameters |
+| | `PUT /plan/route/params/edit/:plan_id` 🔒 | Route plan-view parameters (right-of-way, toggles) |
 | | `PUT /plan/{traverse,forward,differential-leveling}-data/edit/:plan_id` 🔒 | Field computations |
 | | `GET /plan/generate/:plan_id` 🔒 | Generate the drawing (Python service) |
 | | `PUT /plan/computation/convert/:plan_id` 🔒 | Convert a computation into a plan |
 | | `PUT /plan/import/:plan_id` 🔒 | Import a computation into a plan |
-| Compute | `POST /traverse/back-computation` · `POST /traverse/forward-computation` · `POST /traverse/traverse-computation` | Stateless traverse computations |
+| Compute | `POST /traverse/back-computation` · `POST /traverse/forward-computation` · `POST /traverse/traverse-computation` · `POST /traverse/area-computation` | Stateless traverse computations |
 | | `POST /leveling/differential` | Stateless leveling reduction |
 
 ## Getting started

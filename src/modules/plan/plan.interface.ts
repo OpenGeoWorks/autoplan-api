@@ -81,6 +81,88 @@ export interface LongitudinalProfileParameters {
     starting_chainage?: number;
 }
 
+/** Plan-view (horizontal alignment) settings for route surveys. */
+export interface RouteParameters {
+    right_of_way_width?: number; // metres, total corridor width
+    show_plan_view?: boolean;
+    show_chainage_labels?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Layout (estate subdivision) plans
+// ---------------------------------------------------------------------------
+
+export interface LayoutBoundary {
+    coordinates: CoordinateProps[];
+    area?: number;
+    legs?: TraverseLegProps[];
+}
+
+/** A plot defined by corner beacon ids referencing the plan's coordinate register. */
+export interface LayoutPlot {
+    block?: string;
+    number?: number | string;
+    ids: string[];
+    area?: number;
+    use?: string; // residential | commercial | open_space | <facility>
+}
+
+/** A road defined by centerline beacon ids in the coordinate register. */
+export interface LayoutRoad {
+    name?: string;
+    width?: number;
+    centerline_ids: string[];
+}
+
+export interface LayoutPlotParams {
+    frontage?: number; // meters along the road (15 x 30 = the standard 450 sqm plot)
+    depth?: number;
+    min_area?: number;
+    remainder_strategy?: string; // add_to_last | separate | distribute
+}
+
+export interface LayoutRoadParams {
+    major_width?: number;
+    collector_width?: number;
+    access_width?: number;
+    corner_radius?: number;
+    major_road_name?: string;
+}
+
+export interface LayoutBlockParams {
+    double_loaded?: boolean;
+    max_length?: number;
+    orientation?: string; // auto | ns | ew
+}
+
+export interface LayoutReserveParams {
+    open_space_percent?: number;
+    commercial_along_major?: boolean;
+    facilities?: string[];
+}
+
+export interface LayoutNumberingParams {
+    scheme?: string;
+    block_labels?: string;
+    plot_start?: number;
+}
+
+/** Design parameters for auto-generating a subdivision layout. */
+export interface LayoutParameters {
+    plot?: LayoutPlotParams;
+    roads?: LayoutRoadParams;
+    blocks?: LayoutBlockParams;
+    reserves?: LayoutReserveParams;
+    numbering?: LayoutNumberingParams;
+}
+
+/** Payload for editing a layout's designed data (draw mode). */
+export interface LayoutDataInput {
+    coordinates?: CoordinateProps[];
+    plots?: LayoutPlot[];
+    roads?: LayoutRoad[];
+}
+
 export interface ForwardComputationData {
     coordinates?: CoordinateProps[];
     start: CoordinateProps;
@@ -130,11 +212,16 @@ export interface IPlan {
     differential_leveling_data?: DifferentialLevelingData;
     topographic_boundary?: TopographicBoundary;
     topographic_setting?: TopographicSetting;
+    layout_boundary?: LayoutBoundary;
+    layout_parameters?: LayoutParameters;
+    plots?: LayoutPlot[];
+    roads?: LayoutRoad[];
     page_size?: PageSize;
     page_orientation?: PageOrientation;
     footers: string[];
     footer_size: number;
     longitudinal_profile_parameters?: LongitudinalProfileParameters;
+    route_parameters?: RouteParameters;
     dxf_version?: string; // e.g. R12, R2000
     /** Computation-only "plans" hold field computations that can later be converted or imported. */
     computation_only: boolean;

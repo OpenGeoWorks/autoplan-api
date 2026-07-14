@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { authenticate } from '@middlewares/auth';
 import {
+    editRouteParametersController,
+    editLayoutBoundaryController,
+    editLayoutParametersController,
+    editLayoutDataController,
     createPlanController,
     listPlansController,
     fetchPlanController,
@@ -36,6 +40,10 @@ planRouter.put('/parcels/edit/:plan_id', editParcelsController);
 planRouter.put('/topo/boundary/edit/:plan_id', editTopoBoundaryController);
 planRouter.put('/topo/setting/edit/:plan_id', editTopoSettingController);
 planRouter.put('/route/longitudinal/params/edit/:plan_id', editLongitudinalProfileParametersController);
+planRouter.put('/route/params/edit/:plan_id', editRouteParametersController);
+planRouter.put('/layout/boundary/edit/:plan_id', editLayoutBoundaryController);
+planRouter.put('/layout/params/edit/:plan_id', editLayoutParametersController);
+planRouter.put('/layout/data/edit/:plan_id', editLayoutDataController);
 
 planRouter.put('/traverse-data/edit/:plan_id', editTraverseComputationController);
 planRouter.put('/forward-data/edit/:plan_id', editForwardComputationController);

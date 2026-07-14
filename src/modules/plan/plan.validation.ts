@@ -104,6 +104,79 @@ export const validateEditTopoSetting = (req: Request): void => {
     });
 };
 
+export const validateEditRouteParameters = (req: Request): void => {
+    validator.validate(req.body as Record<string, unknown>, {
+        right_of_way_width: 'numeric',
+        show_plan_view: 'boolean',
+        show_chainage_labels: 'boolean',
+    });
+};
+
+export const validateEditLayoutBoundary = (req: Request): void => {
+    validator.validate(req.body as Record<string, unknown>, {
+        coordinates: 'required|array',
+        'coordinates.*': coordinateRules,
+        area: 'numeric',
+    });
+};
+
+export const validateEditLayoutParameters = (req: Request): void => {
+    validator.validate(req.body as Record<string, unknown>, {
+        plot: {
+            frontage: 'numeric',
+            depth: 'numeric',
+            min_area: 'numeric',
+            remainder_strategy: 'string|in:add_to_last,separate,distribute',
+        },
+        roads: {
+            major_width: 'numeric',
+            collector_width: 'numeric',
+            access_width: 'numeric',
+            corner_radius: 'numeric',
+            major_road_name: 'string',
+        },
+        blocks: {
+            double_loaded: 'boolean',
+            max_length: 'numeric',
+            orientation: 'string|in:auto,ns,ew',
+        },
+        reserves: {
+            open_space_percent: 'numeric',
+            commercial_along_major: 'boolean',
+            facilities: 'array',
+            'facilities.*': 'string',
+        },
+        numbering: {
+            scheme: 'string',
+            block_labels: 'string',
+            plot_start: 'numeric',
+        },
+    });
+};
+
+export const validateEditLayoutData = (req: Request): void => {
+    validator.validate(req.body as Record<string, unknown>, {
+        coordinates: 'array',
+        'coordinates.*': coordinateRules,
+        plots: 'array',
+        'plots.*': {
+            block: 'string',
+            number: 'string_or_numeric',
+            ids: 'required|array|min:3',
+            'ids.*': 'required|string',
+            area: 'numeric',
+            use: 'string',
+        },
+        roads: 'array',
+        'roads.*': {
+            name: 'string',
+            width: 'numeric',
+            centerline_ids: 'required|array|min:2',
+            'centerline_ids.*': 'required|string',
+        },
+    });
+};
+
 export const validateEditLongitudinalProfileParameters = (req: Request): void => {
     validator.validate(req.body as Record<string, unknown>, {
         horizontal_scale: 'numeric',

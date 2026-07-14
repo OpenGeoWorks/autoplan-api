@@ -140,6 +140,80 @@ const longitudinalProfileParametersSchema = new Schema(
     { _id: false },
 );
 
+const routeParametersSchema = new Schema(
+    {
+        right_of_way_width: { type: Number, default: 30 },
+        show_plan_view: { type: Boolean, default: true },
+        show_chainage_labels: { type: Boolean, default: true },
+    },
+    { _id: false },
+);
+
+const layoutBoundarySchema = new Schema(
+    {
+        coordinates: [coordinateSchema],
+        area: Number,
+    },
+    { _id: false },
+);
+
+const layoutPlotSchema = new Schema(
+    {
+        block: String,
+        number: Schema.Types.Mixed, // 1 or "1A"
+        ids: [String],
+        area: Number,
+        use: {
+            type: String,
+            default: 'residential',
+        },
+    },
+    { _id: false },
+);
+
+const layoutRoadSchema = new Schema(
+    {
+        name: String,
+        width: Number,
+        centerline_ids: [String],
+    },
+    { _id: false },
+);
+
+const layoutParametersSchema = new Schema(
+    {
+        plot: {
+            frontage: { type: Number, default: 15 },
+            depth: { type: Number, default: 30 },
+            min_area: { type: Number, default: 400 },
+            remainder_strategy: { type: String, default: 'add_to_last' },
+        },
+        roads: {
+            major_width: { type: Number, default: 15 },
+            collector_width: { type: Number, default: 12 },
+            access_width: { type: Number, default: 9 },
+            corner_radius: { type: Number, default: 6 },
+            major_road_name: { type: String, default: '' },
+        },
+        blocks: {
+            double_loaded: { type: Boolean, default: true },
+            max_length: { type: Number, default: 180 },
+            orientation: { type: String, default: 'auto' },
+        },
+        reserves: {
+            open_space_percent: { type: Number, default: 10 },
+            commercial_along_major: { type: Boolean, default: true },
+            facilities: { type: [String], default: [] },
+        },
+        numbering: {
+            scheme: { type: String, default: 'block_plot' },
+            block_labels: { type: String, default: 'alphabetic' },
+            plot_start: { type: Number, default: 1 },
+        },
+    },
+    { _id: false, minimize: false },
+);
+
 const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
     {
         user: {
@@ -255,6 +329,20 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         topographic_setting: {
             type: topographicSettingSchema,
         },
+        layout_boundary: {
+            type: layoutBoundarySchema,
+        },
+        layout_parameters: {
+            type: layoutParametersSchema,
+        },
+        plots: {
+            type: [layoutPlotSchema],
+            default: undefined,
+        },
+        roads: {
+            type: [layoutRoadSchema],
+            default: undefined,
+        },
         footers: {
             type: [String],
             default: [],
@@ -265,6 +353,9 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         longitudinal_profile_parameters: {
             type: longitudinalProfileParametersSchema,
+        },
+        route_parameters: {
+            type: routeParametersSchema,
         },
         dxf_version: {
             type: String,

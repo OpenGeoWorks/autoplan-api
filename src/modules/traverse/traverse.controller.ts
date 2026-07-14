@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import catchAsync from '@utils/catch-async';
 import { sendSuccess } from '@utils/api-response';
-import { backComputation, forwardComputation, traverseComputation } from './traverse.service';
-import { BackComputationInput, ForwardComputationInput, TraverseComputationInput } from './traverse.interface';
+import { backComputation, computeArea, forwardComputation, traverseComputation } from './traverse.service';
+import { AreaComputationInput, BackComputationInput, ForwardComputationInput, TraverseComputationInput } from './traverse.interface';
 import {
+    validateAreaComputation,
     validateBackComputation,
     validateForwardComputation,
     validateTraverseComputation,
@@ -12,6 +13,12 @@ import {
 export const backComputationController = catchAsync(async (req: Request, res: Response) => {
     validateBackComputation(req);
     const result = backComputation({ ...(req.body as BackComputationInput), round: true, area: true });
+    sendSuccess(res, result);
+});
+
+export const areaComputationController = catchAsync(async (req: Request, res: Response) => {
+    validateAreaComputation(req);
+    const result = computeArea({ ...(req.body as AreaComputationInput), round: true });
     sendSuccess(res, result);
 });
 

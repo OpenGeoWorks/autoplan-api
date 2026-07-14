@@ -15,6 +15,13 @@ export const validateBackComputation = (req: Request): void => {
     });
 };
 
+export const validateAreaComputation = (req: Request): void => {
+    validator.validate(req.body as Record<string, unknown>, {
+        points: 'required|array|min:3',
+        'points.*': coordinateRules,
+    });
+};
+
 export const validateForwardComputation = (req: Request): void => {
     validator.validate(req.body as Record<string, unknown>, {
         coordinates: 'array',

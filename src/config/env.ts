@@ -13,7 +13,7 @@ export const parsePemKey = (key: string): string => (key ?? '').split('\\n').joi
 
 const env = {
     ENV: process.env.NODE_ENV || 'dev',
-    PORT: parseInt(process.env.PORT as string, 10) || 3000,
+    PORT: parseInt(process.env.PORT as string, 10) || 3002,
     MONGO_URI: process.env.MONGO_URI as string,
     REDIS_URI: process.env.REDIS_URI as string,
     JWT_SECRET: parsePemKey(process.env.JWT_SECRET as string),
