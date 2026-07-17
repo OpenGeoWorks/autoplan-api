@@ -129,6 +129,7 @@ export const differentialLeveling = (data: DifferentialLevelingInput): Different
 
     for (const station of stations) {
         station.uncorrected_reduced_level = station.reduced_level;
+        station.correction = 0;
     }
 
     let misclosure: number | undefined;
@@ -152,7 +153,6 @@ export const differentialLeveling = (data: DifferentialLevelingInput): Different
         let networkCount = 0;
         for (let i = 0; i < stations.length; i++) {
             if (i === 0) {
-                stations[i].correction = 0;
                 continue;
             }
 
