@@ -397,6 +397,894 @@
     "northing_misclosure": 151.708,
     "easting_misclosure": -250.539
   },
+  "check_traverse": {
+    "traverse_legs": [
+      {
+        "from": {
+          "id": "XSU 101",
+          "northing": 763120.48,
+          "easting": 544890.22
+        },
+        "to": {
+          "id": "XSU 102",
+          "northing": 762300.22,
+          "easting": 545660.48
+        },
+        "distance": 1125.223,
+        "bearing": {
+          "degrees": 136,
+          "minutes": 48,
+          "seconds": 2.059,
+          "decimal": 136.801
+        },
+        "delta_northing": -820.26,
+        "delta_easting": 770.26,
+        "fixed": true
+      },
+      {
+        "from": {
+          "id": "XSU 102",
+          "northing": 762300.22,
+          "easting": 545660.48
+        },
+        "to": {
+          "id": "TP 1",
+          "northing": 762369.807,
+          "easting": 545480.046,
+          "uncorrected_northing": 762369.808,
+          "uncorrected_easting": 545480.047
+        },
+        "distance": 193.387,
+        "bearing": {
+          "degrees": 291,
+          "minutes": 5,
+          "seconds": 24.622,
+          "decimal": 291.09
+        },
+        "delta_northing": 69.588,
+        "delta_easting": -180.433,
+        "arithmetic_sum_northing": 70,
+        "arithmetic_sum_easting": 180,
+        "northing_misclosure": -0.0006,
+        "easting_misclosure": -0.00092,
+        "observed_angle": {
+          "degrees": 334,
+          "minutes": 17,
+          "seconds": 22.8
+        },
+        "back_bearing": {
+          "degrees": 316,
+          "minutes": 48,
+          "seconds": 2.059,
+          "decimal": 316.801
+        },
+        "forward_bearing": {
+          "degrees": 291,
+          "minutes": 5,
+          "seconds": 24.859,
+          "decimal": 291.09
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.238,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 1",
+          "northing": 762369.807,
+          "easting": 545480.046,
+          "uncorrected_northing": 762369.808,
+          "uncorrected_easting": 545480.047
+        },
+        "to": {
+          "id": "TP 2",
+          "northing": 762515.36,
+          "easting": 545359.827,
+          "uncorrected_northing": 762515.361,
+          "uncorrected_easting": 545359.829
+        },
+        "distance": 188.781,
+        "bearing": {
+          "degrees": 320,
+          "minutes": 26,
+          "seconds": 43.484,
+          "decimal": 320.445
+        },
+        "delta_northing": 145.554,
+        "delta_easting": -120.218,
+        "arithmetic_sum_northing": 216,
+        "arithmetic_sum_easting": 300,
+        "northing_misclosure": -0.00184,
+        "easting_misclosure": -0.00153,
+        "observed_angle": {
+          "degrees": 209,
+          "minutes": 21,
+          "seconds": 19.1
+        },
+        "back_bearing": {
+          "degrees": 111,
+          "minutes": 5,
+          "seconds": 24.859,
+          "decimal": 111.09
+        },
+        "forward_bearing": {
+          "degrees": 320,
+          "minutes": 26,
+          "seconds": 43.959,
+          "decimal": 320.446
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.475,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 2",
+          "northing": 762515.36,
+          "easting": 545359.827,
+          "uncorrected_northing": 762515.361,
+          "uncorrected_easting": 545359.829
+        },
+        "to": {
+          "id": "TP 3",
+          "northing": 762680.587,
+          "easting": 545390.449,
+          "uncorrected_northing": 762680.591,
+          "uncorrected_easting": 545390.451
+        },
+        "distance": 168.043,
+        "bearing": {
+          "degrees": 10,
+          "minutes": 29,
+          "seconds": 58.247,
+          "decimal": 10.5
+        },
+        "delta_northing": 165.229,
+        "delta_easting": 30.622,
+        "arithmetic_sum_northing": 381,
+        "arithmetic_sum_easting": 331,
+        "northing_misclosure": -0.00324,
+        "easting_misclosure": -0.00169,
+        "observed_angle": {
+          "degrees": 230,
+          "minutes": 3,
+          "seconds": 15
+        },
+        "back_bearing": {
+          "degrees": 140,
+          "minutes": 26,
+          "seconds": 43.959,
+          "decimal": 140.446
+        },
+        "forward_bearing": {
+          "degrees": 10,
+          "minutes": 29,
+          "seconds": 58.959,
+          "decimal": 10.5
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.713,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 3",
+          "northing": 762680.587,
+          "easting": 545390.449,
+          "uncorrected_northing": 762680.591,
+          "uncorrected_easting": 545390.451
+        },
+        "to": {
+          "id": "TP 4",
+          "northing": 762799.907,
+          "easting": 545234.806,
+          "uncorrected_northing": 762799.911,
+          "uncorrected_easting": 545234.809
+        },
+        "distance": 196.117,
+        "bearing": {
+          "degrees": 307,
+          "minutes": 28,
+          "seconds": 29.909,
+          "decimal": 307.475
+        },
+        "delta_northing": 119.32,
+        "delta_easting": -155.642,
+        "arithmetic_sum_northing": 500,
+        "arithmetic_sum_easting": 487,
+        "northing_misclosure": -0.00425,
+        "easting_misclosure": -0.00249,
+        "observed_angle": {
+          "degrees": 116,
+          "minutes": 58,
+          "seconds": 31.9
+        },
+        "back_bearing": {
+          "degrees": 190,
+          "minutes": 29,
+          "seconds": 58.959,
+          "decimal": 190.5
+        },
+        "forward_bearing": {
+          "degrees": 307,
+          "minutes": 28,
+          "seconds": 30.859,
+          "decimal": 307.475
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.95,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 4",
+          "northing": 762799.907,
+          "easting": 545234.806,
+          "uncorrected_northing": 762799.911,
+          "uncorrected_easting": 545234.809
+        },
+        "to": {
+          "id": "TP 5",
+          "northing": 762860.253,
+          "easting": 545010.558,
+          "uncorrected_northing": 762860.258,
+          "uncorrected_easting": 545010.562
+        },
+        "distance": 232.225,
+        "bearing": {
+          "degrees": 285,
+          "minutes": 3,
+          "seconds": 42.972,
+          "decimal": 285.062
+        },
+        "delta_northing": 60.347,
+        "delta_easting": -224.247,
+        "arithmetic_sum_northing": 560,
+        "arithmetic_sum_easting": 711,
+        "northing_misclosure": -0.00476,
+        "easting_misclosure": -0.00363,
+        "observed_angle": {
+          "degrees": 157,
+          "minutes": 35,
+          "seconds": 13.3
+        },
+        "back_bearing": {
+          "degrees": 127,
+          "minutes": 28,
+          "seconds": 30.859,
+          "decimal": 127.475
+        },
+        "forward_bearing": {
+          "degrees": 285,
+          "minutes": 3,
+          "seconds": 44.159,
+          "decimal": 285.062
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.188,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 5",
+          "northing": 762860.253,
+          "easting": 545010.558,
+          "uncorrected_northing": 762860.258,
+          "uncorrected_easting": 545010.562
+        },
+        "to": {
+          "id": "TP 6",
+          "northing": 762950.678,
+          "easting": 544845.134,
+          "uncorrected_northing": 762950.684,
+          "uncorrected_easting": 544845.138
+        },
+        "distance": 188.525,
+        "bearing": {
+          "degrees": 298,
+          "minutes": 39,
+          "seconds": 44.934,
+          "decimal": 298.662
+        },
+        "delta_northing": 90.426,
+        "delta_easting": -165.423,
+        "arithmetic_sum_northing": 650,
+        "arithmetic_sum_easting": 876,
+        "northing_misclosure": -0.00553,
+        "easting_misclosure": -0.00447,
+        "observed_angle": {
+          "degrees": 193,
+          "minutes": 36,
+          "seconds": 2.2
+        },
+        "back_bearing": {
+          "degrees": 105,
+          "minutes": 3,
+          "seconds": 44.159,
+          "decimal": 105.062
+        },
+        "forward_bearing": {
+          "degrees": 298,
+          "minutes": 39,
+          "seconds": 46.359,
+          "decimal": 298.663
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.425,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 6",
+          "northing": 762950.678,
+          "easting": 544845.134,
+          "uncorrected_northing": 762950.684,
+          "uncorrected_easting": 544845.138
+        },
+        "to": {
+          "id": "XSU 101",
+          "northing": 763120.48,
+          "easting": 544890.22
+        },
+        "distance": 175.687,
+        "bearing": {
+          "degrees": 14,
+          "minutes": 52,
+          "seconds": 12.497,
+          "decimal": 14.87
+        },
+        "delta_northing": 169.803,
+        "delta_easting": 45.086,
+        "arithmetic_sum_northing": 820,
+        "arithmetic_sum_easting": 921,
+        "northing_misclosure": -0.00697,
+        "easting_misclosure": -0.0047,
+        "observed_angle": {
+          "degrees": 256,
+          "minutes": 12,
+          "seconds": 27.8
+        },
+        "back_bearing": {
+          "degrees": 118,
+          "minutes": 39,
+          "seconds": 46.359,
+          "decimal": 118.663
+        },
+        "forward_bearing": {
+          "degrees": 14,
+          "minutes": 52,
+          "seconds": 14.159,
+          "decimal": 14.871
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.663,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "XSU 101",
+          "northing": 763120.48,
+          "easting": 544890.22
+        },
+        "to": {
+          "id": "XSU 102",
+          "northing": 762300.22,
+          "easting": 545660.48
+        },
+        "distance": 1125.223,
+        "bearing": {
+          "degrees": 136,
+          "minutes": 48,
+          "seconds": 2.059,
+          "decimal": 136.801
+        },
+        "observed_angle": {
+          "degrees": 301,
+          "minutes": 55,
+          "seconds": 49.8
+        },
+        "back_bearing": {
+          "degrees": 194,
+          "minutes": 52,
+          "seconds": 14.159,
+          "decimal": 194.871
+        },
+        "forward_bearing": {
+          "degrees": 136,
+          "minutes": 48,
+          "seconds": 3.959,
+          "decimal": 136.801
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.9,
+          "decimal": -0.001
+        },
+        "fixed": true
+      }
+    ],
+    "coordinates": [
+      {
+        "id": "XSU 101",
+        "northing": 763120.48,
+        "easting": 544890.22
+      },
+      {
+        "id": "XSU 102",
+        "northing": 762300.22,
+        "easting": 545660.48
+      }
+    ],
+    "area": 47356.91,
+    "northing_misclosure": -0.007,
+    "easting_misclosure": -0.005
+  },
+  "check_traverse_uncorrected": {
+    "traverse_legs": [
+      {
+        "from": {
+          "id": "XSU 101",
+          "northing": 763120.48,
+          "easting": 544890.22
+        },
+        "to": {
+          "id": "XSU 102",
+          "northing": 762300.22,
+          "easting": 545660.48
+        },
+        "distance": 1125.223,
+        "bearing": {
+          "degrees": 136,
+          "minutes": 48,
+          "seconds": 2.059,
+          "decimal": 136.801
+        },
+        "delta_northing": -820.26,
+        "delta_easting": 770.26,
+        "fixed": true
+      },
+      {
+        "from": {
+          "id": "XSU 102",
+          "northing": 762300.22,
+          "easting": 545660.48
+        },
+        "to": {
+          "id": "TP 1",
+          "northing": 762369.808,
+          "easting": 545480.047,
+          "uncorrected_northing": 762369.808,
+          "uncorrected_easting": 545480.047
+        },
+        "distance": 193.387,
+        "bearing": {
+          "degrees": 291,
+          "minutes": 5,
+          "seconds": 24.622,
+          "decimal": 291.09
+        },
+        "delta_northing": 69.588,
+        "delta_easting": -180.433,
+        "arithmetic_sum_northing": 70,
+        "arithmetic_sum_easting": 180,
+        "observed_angle": {
+          "degrees": 334,
+          "minutes": 17,
+          "seconds": 22.8
+        },
+        "back_bearing": {
+          "degrees": 316,
+          "minutes": 48,
+          "seconds": 2.059,
+          "decimal": 316.801
+        },
+        "forward_bearing": {
+          "degrees": 291,
+          "minutes": 5,
+          "seconds": 24.859,
+          "decimal": 291.09
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.238,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 1",
+          "northing": 762369.808,
+          "easting": 545480.047,
+          "uncorrected_northing": 762369.808,
+          "uncorrected_easting": 545480.047
+        },
+        "to": {
+          "id": "TP 2",
+          "northing": 762515.361,
+          "easting": 545359.829,
+          "uncorrected_northing": 762515.361,
+          "uncorrected_easting": 545359.829
+        },
+        "distance": 188.781,
+        "bearing": {
+          "degrees": 320,
+          "minutes": 26,
+          "seconds": 43.484,
+          "decimal": 320.445
+        },
+        "delta_northing": 145.554,
+        "delta_easting": -120.218,
+        "arithmetic_sum_northing": 216,
+        "arithmetic_sum_easting": 300,
+        "observed_angle": {
+          "degrees": 209,
+          "minutes": 21,
+          "seconds": 19.1
+        },
+        "back_bearing": {
+          "degrees": 111,
+          "minutes": 5,
+          "seconds": 24.859,
+          "decimal": 111.09
+        },
+        "forward_bearing": {
+          "degrees": 320,
+          "minutes": 26,
+          "seconds": 43.959,
+          "decimal": 320.446
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.475,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 2",
+          "northing": 762515.361,
+          "easting": 545359.829,
+          "uncorrected_northing": 762515.361,
+          "uncorrected_easting": 545359.829
+        },
+        "to": {
+          "id": "TP 3",
+          "northing": 762680.591,
+          "easting": 545390.451,
+          "uncorrected_northing": 762680.591,
+          "uncorrected_easting": 545390.451
+        },
+        "distance": 168.043,
+        "bearing": {
+          "degrees": 10,
+          "minutes": 29,
+          "seconds": 58.247,
+          "decimal": 10.5
+        },
+        "delta_northing": 165.229,
+        "delta_easting": 30.622,
+        "arithmetic_sum_northing": 381,
+        "arithmetic_sum_easting": 331,
+        "observed_angle": {
+          "degrees": 230,
+          "minutes": 3,
+          "seconds": 15
+        },
+        "back_bearing": {
+          "degrees": 140,
+          "minutes": 26,
+          "seconds": 43.959,
+          "decimal": 140.446
+        },
+        "forward_bearing": {
+          "degrees": 10,
+          "minutes": 29,
+          "seconds": 58.959,
+          "decimal": 10.5
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.713,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 3",
+          "northing": 762680.591,
+          "easting": 545390.451,
+          "uncorrected_northing": 762680.591,
+          "uncorrected_easting": 545390.451
+        },
+        "to": {
+          "id": "TP 4",
+          "northing": 762799.911,
+          "easting": 545234.809,
+          "uncorrected_northing": 762799.911,
+          "uncorrected_easting": 545234.809
+        },
+        "distance": 196.117,
+        "bearing": {
+          "degrees": 307,
+          "minutes": 28,
+          "seconds": 29.909,
+          "decimal": 307.475
+        },
+        "delta_northing": 119.32,
+        "delta_easting": -155.642,
+        "arithmetic_sum_northing": 500,
+        "arithmetic_sum_easting": 487,
+        "observed_angle": {
+          "degrees": 116,
+          "minutes": 58,
+          "seconds": 31.9
+        },
+        "back_bearing": {
+          "degrees": 190,
+          "minutes": 29,
+          "seconds": 58.959,
+          "decimal": 190.5
+        },
+        "forward_bearing": {
+          "degrees": 307,
+          "minutes": 28,
+          "seconds": 30.859,
+          "decimal": 307.475
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -0.95,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 4",
+          "northing": 762799.911,
+          "easting": 545234.809,
+          "uncorrected_northing": 762799.911,
+          "uncorrected_easting": 545234.809
+        },
+        "to": {
+          "id": "TP 5",
+          "northing": 762860.258,
+          "easting": 545010.562,
+          "uncorrected_northing": 762860.258,
+          "uncorrected_easting": 545010.562
+        },
+        "distance": 232.225,
+        "bearing": {
+          "degrees": 285,
+          "minutes": 3,
+          "seconds": 42.972,
+          "decimal": 285.062
+        },
+        "delta_northing": 60.347,
+        "delta_easting": -224.247,
+        "arithmetic_sum_northing": 560,
+        "arithmetic_sum_easting": 711,
+        "observed_angle": {
+          "degrees": 157,
+          "minutes": 35,
+          "seconds": 13.3
+        },
+        "back_bearing": {
+          "degrees": 127,
+          "minutes": 28,
+          "seconds": 30.859,
+          "decimal": 127.475
+        },
+        "forward_bearing": {
+          "degrees": 285,
+          "minutes": 3,
+          "seconds": 44.159,
+          "decimal": 285.062
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.188,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 5",
+          "northing": 762860.258,
+          "easting": 545010.562,
+          "uncorrected_northing": 762860.258,
+          "uncorrected_easting": 545010.562
+        },
+        "to": {
+          "id": "TP 6",
+          "northing": 762950.684,
+          "easting": 544845.138,
+          "uncorrected_northing": 762950.684,
+          "uncorrected_easting": 544845.138
+        },
+        "distance": 188.525,
+        "bearing": {
+          "degrees": 298,
+          "minutes": 39,
+          "seconds": 44.934,
+          "decimal": 298.662
+        },
+        "delta_northing": 90.426,
+        "delta_easting": -165.423,
+        "arithmetic_sum_northing": 650,
+        "arithmetic_sum_easting": 876,
+        "observed_angle": {
+          "degrees": 193,
+          "minutes": 36,
+          "seconds": 2.2
+        },
+        "back_bearing": {
+          "degrees": 105,
+          "minutes": 3,
+          "seconds": 44.159,
+          "decimal": 105.062
+        },
+        "forward_bearing": {
+          "degrees": 298,
+          "minutes": 39,
+          "seconds": 46.359,
+          "decimal": 298.663
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.425,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "TP 6",
+          "northing": 762950.684,
+          "easting": 544845.138,
+          "uncorrected_northing": 762950.684,
+          "uncorrected_easting": 544845.138
+        },
+        "to": {
+          "id": "XSU 101",
+          "northing": 763120.487,
+          "easting": 544890.225
+        },
+        "distance": 175.687,
+        "bearing": {
+          "degrees": 14,
+          "minutes": 52,
+          "seconds": 12.497,
+          "decimal": 14.87
+        },
+        "delta_northing": 169.803,
+        "delta_easting": 45.086,
+        "arithmetic_sum_northing": 820,
+        "arithmetic_sum_easting": 921,
+        "observed_angle": {
+          "degrees": 256,
+          "minutes": 12,
+          "seconds": 27.8
+        },
+        "back_bearing": {
+          "degrees": 118,
+          "minutes": 39,
+          "seconds": 46.359,
+          "decimal": 118.663
+        },
+        "forward_bearing": {
+          "degrees": 14,
+          "minutes": 52,
+          "seconds": 14.159,
+          "decimal": 14.871
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.663,
+          "decimal": 0
+        },
+        "fixed": false
+      },
+      {
+        "from": {
+          "id": "XSU 101",
+          "northing": 763120.487,
+          "easting": 544890.225
+        },
+        "to": {
+          "id": "XSU 102",
+          "northing": 762300.22,
+          "easting": 545660.48
+        },
+        "distance": 1125.223,
+        "bearing": {
+          "degrees": 136,
+          "minutes": 48,
+          "seconds": 2.059,
+          "decimal": 136.801
+        },
+        "observed_angle": {
+          "degrees": 301,
+          "minutes": 55,
+          "seconds": 49.8
+        },
+        "back_bearing": {
+          "degrees": 194,
+          "minutes": 52,
+          "seconds": 14.159,
+          "decimal": 194.871
+        },
+        "forward_bearing": {
+          "degrees": 136,
+          "minutes": 48,
+          "seconds": 3.959,
+          "decimal": 136.801
+        },
+        "bearing_correction": {
+          "degrees": 0,
+          "minutes": 0,
+          "seconds": -1.9,
+          "decimal": -0.001
+        },
+        "fixed": false
+      }
+    ],
+    "coordinates": [
+      {
+        "id": "XSU 101",
+        "northing": 763120.48,
+        "easting": 544890.22
+      },
+      {
+        "id": "XSU 102",
+        "northing": 762300.22,
+        "easting": 545660.48
+      }
+    ],
+    "area": 47357.056,
+    "northing_misclosure": -0.007,
+    "easting_misclosure": -0.005
+  },
   "leveling_rf": {
     "stations": [
       {

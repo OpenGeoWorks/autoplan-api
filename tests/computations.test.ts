@@ -77,6 +77,28 @@ const traverseInput = {
     round: true,
 };
 
+// A check-leg traverse: the final leg closes from one known control station
+// (XSU 101) back onto another (XSU 102). Captured both corrected and
+// uncorrected to guard the closing station's coordinates on the check leg.
+const checkTraverseInput = {
+    coordinates: [
+        { id: 'XSU 101', northing: 763120.48, easting: 544890.22 },
+        { id: 'XSU 102', northing: 762300.22, easting: 545660.48 },
+    ],
+    legs: [
+        { from: { id: 'XSU 102' }, to: { id: 'TP 1' }, observed_angle: { degrees: 334, minutes: 17, seconds: 22.8 }, distance: 193.387 },
+        { from: { id: 'TP 1' }, to: { id: 'TP 2' }, observed_angle: { degrees: 209, minutes: 21, seconds: 19.1 }, distance: 188.781 },
+        { from: { id: 'TP 2' }, to: { id: 'TP 3' }, observed_angle: { degrees: 230, minutes: 3, seconds: 15 }, distance: 168.043 },
+        { from: { id: 'TP 3' }, to: { id: 'TP 4' }, observed_angle: { degrees: 116, minutes: 58, seconds: 31.9 }, distance: 196.117 },
+        { from: { id: 'TP 4' }, to: { id: 'TP 5' }, observed_angle: { degrees: 157, minutes: 35, seconds: 13.3 }, distance: 232.225 },
+        { from: { id: 'TP 5' }, to: { id: 'TP 6' }, observed_angle: { degrees: 193, minutes: 36, seconds: 2.2 }, distance: 188.525 },
+        { from: { id: 'TP 6' }, to: { id: 'XSU 101' }, observed_angle: { degrees: 256, minutes: 12, seconds: 27.8 }, distance: 175.687 },
+        { from: { id: 'XSU 101' }, to: { id: 'XSU 102' }, observed_angle: { degrees: 301, minutes: 55, seconds: 49.8 }, distance: 0 },
+    ],
+    misclosure_correction: true,
+    round: true,
+};
+
 const levelingInput: DifferentialLevelingInput = {
     method: 'rise-and-fall',
     stations: [
@@ -97,6 +119,8 @@ const actual = clone({
     back: backComputation({ points: clone(points), area: true, round: true }),
     forward: forwardComputation(clone(forwardInput)),
     traverse: traverseComputation(clone(traverseInput)),
+    check_traverse: traverseComputation(clone(checkTraverseInput)),
+    check_traverse_uncorrected: traverseComputation(clone({ ...checkTraverseInput, misclosure_correction: false })),
     leveling_rf: differentialLeveling(clone(levelingInput)),
     leveling_hi: differentialLeveling(clone({ ...levelingInput, method: 'height-of-instrument' as const })),
     embellishments: computePlanEmbellishments(clone(points)),

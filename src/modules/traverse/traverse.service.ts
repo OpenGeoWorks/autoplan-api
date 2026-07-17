@@ -28,6 +28,14 @@ const polygonArea = (points: CoordinateProps[], round?: boolean): number =>
     points.length < 3 ? 0 : computeArea({ points, round }).area;
 
 /**
+ * A coordinate is held (fixed) control when a known coordinate shares its id
+ * *and* its northing/easting — a computed station that merely reuses a known
+ * id but sits at a different position is not fixed.
+ */
+const matchesKnown = (coord: CoordinateProps, known: CoordinateProps[]): boolean =>
+    known.some(k => k.id === coord.id && k.northing === coord.northing && k.easting === coord.easting);
+
+/**
  * Area of a closed polygon by the cross-multiplication (shoelace) method.
  * The polygon is closed automatically when the last point differs from the first.
  */
@@ -184,7 +192,6 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
             bearing,
             delta_northing: deltaNorthing,
             delta_easting: deltaEasting,
-            fixed: knownIds.has(current.id) && knownIds.has(nextCoordinate.id),
         };
 
         // Cumulative arithmetic sums (rounded to whole units, as in the
@@ -238,6 +245,12 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
         }
 
         computedLegs[computedLegs.length - 1].to = knownPoint!;
+    }
+
+    // A leg is fixed only when both endpoints hold a known control position
+    // (matched on id and coordinate), evaluated on the final coordinates.
+    for (const leg of computedLegs) {
+        leg.fixed = matchesKnown(leg.from, coordinates) && matchesKnown(leg.to, coordinates);
     }
 
     const northings = computedLegs.map(leg => leg.to.northing);
@@ -427,7 +440,6 @@ export const traverseComputation = (data: TraverseComputationInput): TraverseCom
     const result: TraverseLeg[] = [];
 
     for (const leg of backLegs) {
-        if (data.round) leg.round();
         result.push(leg);
     }
 
@@ -435,7 +447,10 @@ export const traverseComputation = (data: TraverseComputationInput): TraverseCom
         const leg = legsWithBearings[i];
 
         if (isCheckLeg && i === legsWithBearings.length - 1) {
-            if (data.round) leg.round();
+            // The check leg starts from the closing station's computed position
+            // (which equals the known control only once misclosure is corrected),
+            // so it stays consistent with the leg that computed that station.
+            leg.from = forwardComputedLegs[forwardComputedLegs.length - 1].to;
             result.push(leg);
             break;
         }
@@ -449,15 +464,18 @@ export const traverseComputation = (data: TraverseComputationInput): TraverseCom
         leg.northing_misclosure = forwardComputedLegs[i].northing_misclosure;
         leg.easting_misclosure = forwardComputedLegs[i].easting_misclosure;
 
-        if (data.round) leg.round();
         result.push(leg);
     }
 
-    // A leg between two known control stations (the back-computed control legs
-    // and the check leg) is fixed and needs no misclosure correction.
-    const knownIds = new Set(data.coordinates.map(coord => coord.id));
+    // A leg is fixed only when both endpoints hold a known control position
+    // (matched on id and coordinate). Evaluate on the raw coordinates so they
+    // compare exactly against the known control, then round.
     for (const leg of result) {
-        leg.fixed = knownIds.has(leg.from.id) && knownIds.has(leg.to.id);
+        leg.fixed = matchesKnown(leg.from, data.coordinates) && matchesKnown(leg.to, data.coordinates);
+    }
+
+    if (data.round) {
+        for (const leg of result) leg.round();
     }
 
     // The known control coordinates, in the order used for back computation.
