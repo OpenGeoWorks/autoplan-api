@@ -183,11 +183,8 @@ export const validateEditLongitudinalProfileParameters = (req: Request): void =>
     validator.validate(req.body as Record<string, unknown>, {
         horizontal_scale: 'numeric',
         vertical_scale: 'numeric',
-        profile_origin: 'array',
-        'profile_origin.*': 'numeric',
         station_interval: 'numeric',
         elevation_interval: 'numeric',
-        starting_chainage: 'numeric',
     });
 };
 

@@ -77,10 +77,8 @@ export interface TopographicBoundary {
 export interface LongitudinalProfileParameters {
     horizontal_scale?: number;
     vertical_scale?: number;
-    profile_origin?: number[];
     station_interval?: number;
     elevation_interval?: number;
-    starting_chainage?: number;
 }
 
 /** Plan-view (horizontal alignment) settings for route surveys. */

@@ -133,10 +133,8 @@ const longitudinalProfileParametersSchema = new Schema(
     {
         horizontal_scale: Number,
         vertical_scale: Number,
-        profile_origin: [Number],
         station_interval: Number,
         elevation_interval: Number,
-        starting_chainage: Number,
     },
     { _id: false },
 );

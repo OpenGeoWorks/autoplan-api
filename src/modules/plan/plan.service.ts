@@ -49,10 +49,8 @@ const defaultTopographicSetting = (): TopographicSetting => ({
 const defaultLongitudinalProfileParameters = (): LongitudinalProfileParameters => ({
     horizontal_scale: 1.0,
     vertical_scale: 10,
-    profile_origin: [0.0, 0.0],
     station_interval: 10,
     elevation_interval: 1.0,
-    starting_chainage: 0.0,
 });
 
 const defaultRouteParameters = (): RouteParameters => ({
