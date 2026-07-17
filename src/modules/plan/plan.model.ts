@@ -125,6 +125,8 @@ const topographicSettingSchema = new Schema(
         tin: Boolean,
         grid: Boolean,
         show_mesh: Boolean,
+        show_tin_mesh: Boolean,
+        show_grid: Boolean,
     },
     { _id: false },
 );

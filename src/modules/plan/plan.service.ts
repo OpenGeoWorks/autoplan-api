@@ -44,6 +44,8 @@ const defaultTopographicSetting = (): TopographicSetting => ({
     tin: false,
     grid: true,
     show_mesh: false,
+    show_tin_mesh: false,
+    show_grid: false,
 });
 
 const defaultLongitudinalProfileParameters = (): LongitudinalProfileParameters => ({

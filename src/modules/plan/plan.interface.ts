@@ -65,7 +65,9 @@ export interface TopographicSetting {
     boundary_label_scale: number;
     tin?: boolean;
     grid?: boolean;
-    show_mesh?: boolean;
+    show_mesh?: boolean; // legacy single mesh toggle (deprecated)
+    show_tin_mesh?: boolean;
+    show_grid?: boolean;
 }
 
 export interface TopographicBoundary {

@@ -101,6 +101,8 @@ export const validateEditTopoSetting = (req: Request): void => {
         tin: 'boolean',
         grid: 'boolean',
         show_mesh: 'boolean',
+        show_tin_mesh: 'boolean',
+        show_grid: 'boolean',
     });
 };
 
