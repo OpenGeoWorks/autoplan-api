@@ -9,18 +9,25 @@ export class Coordinate implements CoordinateProps {
     public northing: number;
     public easting: number;
     public elevation?: number;
+    public uncorrected_northing?: number;
+    public uncorrected_easting?: number;
 
     constructor(props: CoordinateProps) {
         this.id = props.id;
         this.northing = props.northing;
         this.easting = props.easting;
         this.elevation = props.elevation;
+        // Only populated for computed stations; known control coordinates stay empty.
+        this.uncorrected_northing = props.uncorrected_northing;
+        this.uncorrected_easting = props.uncorrected_easting;
     }
 
     round(): void {
         if (this.northing !== undefined) this.northing = round3(this.northing);
         if (this.easting !== undefined) this.easting = round3(this.easting);
         if (this.elevation !== undefined) this.elevation = round3(this.elevation);
+        if (this.uncorrected_northing !== undefined) this.uncorrected_northing = round3(this.uncorrected_northing);
+        if (this.uncorrected_easting !== undefined) this.uncorrected_easting = round3(this.uncorrected_easting);
     }
 }
 

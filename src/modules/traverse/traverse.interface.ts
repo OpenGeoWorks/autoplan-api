@@ -5,6 +5,9 @@ export interface CoordinateProps {
     northing: number;
     easting: number;
     elevation?: number;
+    /** Coordinate before any misclosure correction (equals northing/easting when uncorrected). */
+    uncorrected_northing?: number;
+    uncorrected_easting?: number;
 }
 
 export interface TraverseLegProps {

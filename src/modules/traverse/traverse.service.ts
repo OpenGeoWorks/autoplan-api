@@ -162,11 +162,20 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
         const deltaNorthing = leg.distance! * Math.cos(bearingRadians);
         const deltaEasting = leg.distance! * Math.sin(bearingRadians);
 
+        const nextNorthing = current.northing + deltaNorthing;
+        const nextEasting = current.easting + deltaEasting;
         const nextCoordinate: CoordinateProps = {
             id: leg.to.id,
-            northing: current.northing + deltaNorthing,
-            easting: current.easting + deltaEasting,
+            northing: nextNorthing,
+            easting: nextEasting,
         };
+
+        // Snapshot the pre-correction coordinate for computed stations only;
+        // known control coordinates are left without an uncorrected value.
+        if (!knownIds.has(nextCoordinate.id)) {
+            nextCoordinate.uncorrected_northing = nextNorthing;
+            nextCoordinate.uncorrected_easting = nextEasting;
+        }
 
         const computed: TraverseLegProps = {
             from: current,

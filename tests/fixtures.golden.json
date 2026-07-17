@@ -116,7 +116,9 @@
         "to": {
           "id": "P1",
           "northing": 712425.747,
-          "easting": 543289.607
+          "easting": 543289.607,
+          "uncorrected_northing": 712429.455,
+          "uncorrected_easting": 543295.951
         },
         "distance": 120.5,
         "bearing": {
@@ -136,12 +138,16 @@
         "from": {
           "id": "P1",
           "northing": 712425.747,
-          "easting": 543289.607
+          "easting": 543289.607,
+          "uncorrected_northing": 712429.455,
+          "uncorrected_easting": 543295.951
         },
         "to": {
           "id": "P2",
           "northing": 712365.475,
-          "easting": 543352.763
+          "easting": 543352.763,
+          "uncorrected_northing": 712371.744,
+          "uncorrected_easting": 543364.123
         },
         "distance": 89.32,
         "bearing": {
@@ -161,7 +167,9 @@
         "from": {
           "id": "P2",
           "northing": 712365.475,
-          "easting": 543352.763
+          "easting": 543352.763,
+          "uncorrected_northing": 712371.744,
+          "uncorrected_easting": 543364.123
         },
         "to": {
           "id": "E",
@@ -229,7 +237,9 @@
         "to": {
           "id": "T1",
           "northing": 712344.789,
-          "easting": 543310.315
+          "easting": 543310.315,
+          "uncorrected_northing": 712296.882,
+          "uncorrected_easting": 543392.492
         },
         "distance": 95.5,
         "bearing": {
@@ -272,12 +282,16 @@
         "from": {
           "id": "T1",
           "northing": 712344.789,
-          "easting": 543310.315
+          "easting": 543310.315,
+          "uncorrected_northing": 712296.882,
+          "uncorrected_easting": 543392.492
         },
         "to": {
           "id": "T2",
           "northing": 712345.011,
-          "easting": 543310.364
+          "easting": 543310.364,
+          "uncorrected_northing": 712232.229,
+          "uncorrected_easting": 543481.733
         },
         "distance": 110.2,
         "bearing": {
@@ -320,7 +334,9 @@
         "from": {
           "id": "T2",
           "northing": 712345.011,
-          "easting": 543310.364
+          "easting": 543310.364,
+          "uncorrected_northing": 712232.229,
+          "uncorrected_easting": 543481.733
         },
         "to": {
           "id": "B",
