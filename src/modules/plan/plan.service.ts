@@ -292,9 +292,11 @@ export const editTopoBoundary = async (
     );
     requireType(plan, PlanType.TOPOGRAPHIC, 'topographic');
 
-    const uniqueIds = new Set(boundary.coordinates.map(point => point.id));
-    if (uniqueIds.size < 3) {
-        throw ApiError.badRequest('A boundary must have at least 3 unique points');
+    if (boundary.coordinates.length > 0) {
+        const uniqueIds = new Set(boundary.coordinates.map(point => point.id));
+        if (uniqueIds.size < 3) {
+            throw ApiError.badRequest('A boundary must have at least 3 unique points');
+        }
     }
 
     // Close the boundary polygon when the caller has not
