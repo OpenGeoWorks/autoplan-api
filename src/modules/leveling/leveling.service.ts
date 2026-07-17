@@ -9,6 +9,7 @@ const roundStation = (station: LevelingStationProps): void => {
         'intermediate_sight',
         'fore_sight',
         'reduced_level',
+        'uncorrected_reduced_level',
         'rise',
         'fall',
         'height_of_instrument',
@@ -126,6 +127,10 @@ const heightOfInstrument = (stations: LevelingStationProps[]): LevelingStationPr
 export const differentialLeveling = (data: DifferentialLevelingInput): DifferentialLevelingResult => {
     const stations = data.method === 'rise-and-fall' ? riseAndFall(data.stations) : heightOfInstrument(data.stations);
 
+    for (const station of stations) {
+        station.uncorrected_reduced_level = station.reduced_level;
+    }
+
     let misclosure: number | undefined;
     const lastKnown = data.stations[data.stations.length - 1].reduced_level;
     if (lastKnown !== undefined) {
@@ -160,7 +165,6 @@ export const differentialLeveling = (data: DifferentialLevelingInput): Different
             stations[i].correction = currentCorrection;
             stations[i].reduced_level = stations[i].reduced_level! + currentCorrection;
         }
-        misclosure = 0;
     }
 
     if (data.round) {

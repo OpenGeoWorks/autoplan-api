@@ -4,6 +4,10 @@
  * `fixtures.golden.json` holds outputs captured from the pre-refactor
  * implementation; this test asserts the current services still produce the
  * same numbers. Run with: npm test
+ *
+ * When a change is meant to alter the outputs, re-capture the baseline with
+ * `npm test -- --update` and review the resulting fixture diff before
+ * committing it.
  */
 
 import fs from 'fs';
@@ -18,7 +22,8 @@ import { differentialLeveling } from '@modules/leveling/leveling.service';
 import { computePlanEmbellishments } from '@modules/plan/plan.embellishments';
 import { DifferentialLevelingInput } from '@modules/leveling/leveling.interface';
 
-const golden = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures.golden.json'), 'utf8'));
+const goldenPath = path.join(__dirname, 'fixtures.golden.json');
+const golden = JSON.parse(fs.readFileSync(goldenPath, 'utf8'));
 
 const points = [
     { id: 'A', northing: 712345.0, easting: 543210.0 },
@@ -96,6 +101,12 @@ const actual = clone({
     leveling_hi: differentialLeveling(clone({ ...levelingInput, method: 'height-of-instrument' as const })),
     embellishments: computePlanEmbellishments(clone(points)),
 });
+
+if (process.argv.includes('--update')) {
+    fs.writeFileSync(goldenPath, JSON.stringify(actual, null, 2) + '\n');
+    console.log('✔ golden fixtures re-captured from the current implementation');
+    process.exit(0);
+}
 
 const diffs: string[] = [];
 const walk = (a: unknown, b: unknown, p: string): void => {

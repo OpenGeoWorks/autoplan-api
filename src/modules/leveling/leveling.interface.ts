@@ -5,6 +5,7 @@ export interface LevelingStationProps {
     intermediate_sight?: number;
     fore_sight?: number;
     reduced_level?: number;
+    uncorrected_reduced_level?: number;
     rise?: number;
     fall?: number;
     height_of_instrument?: number;
