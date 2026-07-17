@@ -42,6 +42,8 @@ export class TraverseLeg {
     public back_bearing?: Bearing;
     public forward_bearing?: Bearing;
     public bearing_correction?: Bearing;
+    /** True when both endpoints are known control, so the leg needs no correction. */
+    public fixed?: boolean;
 
     constructor(props: TraverseLegProps) {
         this.from = props.from ? new Coordinate(props.from) : props.from;
@@ -61,6 +63,7 @@ export class TraverseLeg {
         this.back_bearing = props.back_bearing ? new Bearing(props.back_bearing) : undefined;
         this.forward_bearing = props.forward_bearing ? new Bearing(props.forward_bearing) : undefined;
         this.bearing_correction = props.bearing_correction ? new Bearing(props.bearing_correction) : undefined;
+        this.fixed = props.fixed;
     }
 
     round(): void {

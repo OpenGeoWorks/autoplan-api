@@ -20,6 +20,14 @@ const horizontalDistance = (deltaNorthing: number, deltaEasting: number): number
     Math.hypot(deltaNorthing, deltaEasting);
 
 /**
+ * Shoelace area of the polygon formed by the given station coordinates,
+ * returning 0 when there are too few points to enclose an area (e.g. an
+ * open traverse of one or two legs).
+ */
+const polygonArea = (points: CoordinateProps[], round?: boolean): number =>
+    points.length < 3 ? 0 : computeArea({ points, round }).area;
+
+/**
  * Area of a closed polygon by the cross-multiplication (shoelace) method.
  * The polygon is closed automatically when the last point differs from the first.
  */
@@ -118,7 +126,9 @@ export const backComputation = (data: BackComputationInput): BackComputationResu
  *
  * If the final station is a known coordinate, the northing/easting
  * misclosures are reported and (optionally) distributed over the legs in
- * proportion to the cumulative arithmetic sums of the deltas.
+ * proportion to the cumulative arithmetic sums of the deltas. The reported
+ * misclosures are always the observed closing error, whether or not the
+ * correction was applied.
  */
 export const forwardComputation = (data: ForwardComputationInput): ForwardComputationResult => {
     if (data.legs.length === 0) {
@@ -135,6 +145,10 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
     if (!coordinates.some(coord => coord.id === data.start.id)) {
         coordinates.push(data.start);
     }
+
+    // Known control (the passed-in coordinates plus the fixed start); a leg
+    // whose endpoints are both known needs no correction.
+    const knownIds = new Set(coordinates.map(coord => coord.id));
 
     let current: CoordinateProps = data.start;
     const computedLegs: TraverseLegProps[] = [];
@@ -161,6 +175,7 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
             bearing,
             delta_northing: deltaNorthing,
             delta_easting: deltaEasting,
+            fixed: knownIds.has(current.id) && knownIds.has(nextCoordinate.id),
         };
 
         // Cumulative arithmetic sums (rounded to whole units, as in the
@@ -214,12 +229,13 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
         }
 
         computedLegs[computedLegs.length - 1].to = knownPoint!;
-        northingMisclosure = 0;
-        eastingMisclosure = 0;
     }
 
     const northings = computedLegs.map(leg => leg.to.northing);
     const eastings = computedLegs.map(leg => leg.to.easting);
+
+    // Area enclosed by the (corrected) station coordinates of the legs.
+    const area = polygonArea([data.start, ...computedLegs.map(leg => leg.to)], data.round);
 
     if (data.round) {
         northingMisclosure = northingMisclosure !== undefined ? round3(northingMisclosure) : undefined;
@@ -239,6 +255,7 @@ export const forwardComputation = (data: ForwardComputationInput): ForwardComput
         }),
         traverse: {
             total_distance: totalDistance,
+            area,
             bounding_box: {
                 min_northing: round3(Math.min(...northings)),
                 max_northing: round3(Math.max(...northings)),
@@ -427,9 +444,35 @@ export const traverseComputation = (data: TraverseComputationInput): TraverseCom
         result.push(leg);
     }
 
+    // A leg between two known control stations (the back-computed control legs
+    // and the check leg) is fixed and needs no misclosure correction.
+    const knownIds = new Set(data.coordinates.map(coord => coord.id));
+    for (const leg of result) {
+        leg.fixed = knownIds.has(leg.from.id) && knownIds.has(leg.to.id);
+    }
+
+    // The known control coordinates, in the order used for back computation.
+    const coordinates = arrangedCoordinates.map(coord => {
+        const point = new Coordinate(coord);
+        if (data.round) point.round();
+        return point;
+    });
+
+    let northingMisclosure = forwardResult.northing_misclosure;
+    let eastingMisclosure = forwardResult.easting_misclosure;
+    if (data.round) {
+        northingMisclosure = northingMisclosure !== undefined ? round3(northingMisclosure) : undefined;
+        eastingMisclosure = eastingMisclosure !== undefined ? round3(eastingMisclosure) : undefined;
+    }
+
+    // Area enclosed by the (corrected) station coordinates of the observed legs.
+    const area = polygonArea([firstCoordinate, ...forwardComputedLegs.map(leg => leg.to)], data.round);
+
     return {
         traverse_legs: result,
-        northing_misclosure: forwardResult.northing_misclosure,
-        easting_misclosure: forwardResult.easting_misclosure,
+        coordinates,
+        area,
+        northing_misclosure: northingMisclosure,
+        easting_misclosure: eastingMisclosure,
     };
 };

@@ -129,7 +129,8 @@
         "arithmetic_sum_northing": 84,
         "arithmetic_sum_easting": 86,
         "northing_misclosure": -3.70794,
-        "easting_misclosure": -6.34361
+        "easting_misclosure": -6.34361,
+        "fixed": false
       },
       {
         "from": {
@@ -153,7 +154,8 @@
         "arithmetic_sum_northing": 142,
         "arithmetic_sum_easting": 154,
         "northing_misclosure": -6.26819,
-        "easting_misclosure": -11.35949
+        "easting_misclosure": -11.35949,
+        "fixed": false
       },
       {
         "from": {
@@ -177,11 +179,13 @@
         "arithmetic_sum_northing": 283,
         "arithmetic_sum_easting": 206,
         "northing_misclosure": -12.49224,
-        "easting_misclosure": -15.19516
+        "easting_misclosure": -15.19516,
+        "fixed": false
       }
     ],
     "traverse": {
       "total_distance": 359.82,
+      "area": 4174.208,
       "bounding_box": {
         "min_northing": 712365.475,
         "max_northing": 712500.123,
@@ -189,8 +193,8 @@
         "max_easting": 543400.456
       }
     },
-    "northing_misclosure": 0,
-    "easting_misclosure": 0
+    "northing_misclosure": -12.492,
+    "easting_misclosure": -15.195
   },
   "traverse": {
     "traverse_legs": [
@@ -213,7 +217,8 @@
           "decimal": 90
         },
         "delta_northing": 0,
-        "delta_easting": 100
+        "delta_easting": 100,
+        "fixed": true
       },
       {
         "from": {
@@ -260,7 +265,8 @@
           "degrees": 0,
           "minutes": 0,
           "seconds": 0
-        }
+        },
+        "fixed": false
       },
       {
         "from": {
@@ -307,7 +313,8 @@
           "degrees": 0,
           "minutes": 0,
           "seconds": 0
-        }
+        },
+        "fixed": false
       },
       {
         "from": {
@@ -354,11 +361,25 @@
           "degrees": 0,
           "minutes": 0,
           "seconds": 0
-        }
+        },
+        "fixed": false
       }
     ],
-    "northing_misclosure": 0,
-    "easting_misclosure": 0
+    "coordinates": [
+      {
+        "id": "A",
+        "northing": 712345,
+        "easting": 543210
+      },
+      {
+        "id": "B",
+        "northing": 712345,
+        "easting": 543310
+      }
+    ],
+    "area": 0.04,
+    "northing_misclosure": 151.708,
+    "easting_misclosure": -250.539
   },
   "leveling_rf": {
     "stations": [

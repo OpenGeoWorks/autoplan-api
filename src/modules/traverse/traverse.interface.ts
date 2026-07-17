@@ -26,6 +26,8 @@ export interface TraverseLegProps {
     back_bearing?: BearingProps;
     forward_bearing?: BearingProps;
     bearing_correction?: BearingProps;
+    /** True when both endpoints are known control, so the leg needs no correction. */
+    fixed?: boolean;
 }
 
 /** A station reference in an input leg — only the id is required. */
@@ -91,6 +93,7 @@ export interface ForwardComputationResult {
     computed_legs: TraverseLegProps[];
     traverse: {
         total_distance: number;
+        area: number;
         bounding_box: BoundingBox;
     };
     northing_misclosure?: number;
@@ -106,6 +109,9 @@ export interface TraverseComputationInput {
 
 export interface TraverseComputationResult {
     traverse_legs: TraverseLegProps[];
+    /** The known control coordinates, in the order used for back computation. */
+    coordinates: CoordinateProps[];
+    area: number;
     northing_misclosure?: number;
     easting_misclosure?: number;
 }
