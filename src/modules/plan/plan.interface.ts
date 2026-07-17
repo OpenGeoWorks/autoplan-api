@@ -94,6 +94,17 @@ export interface RouteParameters {
 // Layout (estate subdivision) plans
 // ---------------------------------------------------------------------------
 
+/**
+ * Which layout design the plan uses when generated: the auto-generated
+ * subdivision (from layout_parameters) or the manually entered one
+ * (coordinates/plots/roads). Both datasets are kept; this only selects
+ * which one is drawn and previewed.
+ */
+export enum LayoutMode {
+    AUTO = 'auto',
+    MANUAL = 'manual',
+}
+
 export interface LayoutBoundary {
     coordinates: CoordinateProps[];
     area?: number;
@@ -163,6 +174,7 @@ export interface LayoutDataInput {
     coordinates?: CoordinateProps[];
     plots?: LayoutPlot[];
     roads?: LayoutRoad[];
+    layout_mode?: LayoutMode;
 }
 
 export interface ForwardComputationData {
@@ -216,6 +228,7 @@ export interface IPlan {
     topographic_setting?: TopographicSetting;
     layout_boundary?: LayoutBoundary;
     layout_parameters?: LayoutParameters;
+    layout_mode?: LayoutMode;
     plots?: LayoutPlot[];
     roads?: LayoutRoad[];
     page_size?: PageSize;

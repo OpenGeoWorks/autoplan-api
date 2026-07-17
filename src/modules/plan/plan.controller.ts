@@ -10,6 +10,7 @@ import {
     ImportComputationInput,
     LayoutBoundary,
     LayoutDataInput,
+    LayoutMode,
     LayoutParameters,
     LongitudinalProfileParameters,
     PlanType,
@@ -205,10 +206,12 @@ export const editLayoutBoundaryController = catchAsync(async (req: Request, res:
 
 export const editLayoutParametersController = catchAsync(async (req: Request, res: Response) => {
     validate.validateEditLayoutParameters(req);
+    const { layout_mode, ...params } = req.body as LayoutParameters & { layout_mode?: LayoutMode };
     const plan = await planService.editLayoutParameters(
         req.params.plan_id,
-        req.body as LayoutParameters,
-        ownerOptions(req, { layout_parameters: 1 }),
+        params,
+        layout_mode,
+        ownerOptions(req, { layout_parameters: 1, layout_mode: 1 }),
     );
     sendSuccess(res, plan);
 });
@@ -218,7 +221,7 @@ export const editLayoutDataController = catchAsync(async (req: Request, res: Res
     const plan = await planService.editLayoutData(
         req.params.plan_id,
         req.body as LayoutDataInput,
-        ownerOptions(req, { coordinates: 1, plots: 1, roads: 1 }),
+        ownerOptions(req, { coordinates: 1, plots: 1, roads: 1, layout_mode: 1 }),
     );
     sendSuccess(res, plan);
 });

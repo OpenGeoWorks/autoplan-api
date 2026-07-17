@@ -122,6 +122,7 @@ export const validateEditLayoutBoundary = (req: Request): void => {
 
 export const validateEditLayoutParameters = (req: Request): void => {
     validator.validate(req.body as Record<string, unknown>, {
+        layout_mode: 'string|in:auto,manual',
         plot: {
             frontage: 'numeric',
             depth: 'numeric',
@@ -156,6 +157,7 @@ export const validateEditLayoutParameters = (req: Request): void => {
 
 export const validateEditLayoutData = (req: Request): void => {
     validator.validate(req.body as Record<string, unknown>, {
+        layout_mode: 'string|in:auto,manual',
         coordinates: 'array',
         'coordinates.*': coordinateRules,
         plots: 'array',

@@ -17,6 +17,7 @@ import {
     ImportComputationInput,
     LayoutBoundary,
     LayoutDataInput,
+    LayoutMode,
     LayoutParameters,
     LongitudinalProfileParameters,
     PageOrientation,
@@ -128,6 +129,7 @@ export const createPlan = async (data: CreatePlanInput, options?: RepoOptions): 
 
     if (planData.type === PlanType.LAYOUT) {
         planData.layout_parameters = defaultLayoutParameters();
+        planData.layout_mode = LayoutMode.AUTO;
     }
 
     return planRepository.createPlan(planData);
@@ -425,6 +427,7 @@ export const editLayoutBoundary = async (
 export const editLayoutParameters = async (
     id: string,
     params: LayoutParameters,
+    mode?: LayoutMode,
     options?: RepoOptions,
 ): Promise<IPlan> => {
     const plan = requirePlan(
@@ -432,7 +435,10 @@ export const editLayoutParameters = async (
     );
     requireType(plan, PlanType.LAYOUT, 'layout');
 
-    return requirePlan(await planRepository.editPlan(id, { layout_parameters: params }, options));
+    const update: Partial<IPlan> = { layout_parameters: params };
+    if (mode) update.layout_mode = mode;
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
 };
 
 /**
@@ -486,8 +492,12 @@ export const editLayoutData = async (id: string, data: LayoutDataInput, options?
         update.roads = data.roads;
     }
 
+    if (data.layout_mode) {
+        update.layout_mode = data.layout_mode;
+    }
+
     if (Object.keys(update).length === 0) {
-        throw ApiError.badRequest('Provide coordinates, plots, or roads to edit');
+        throw ApiError.badRequest('Provide coordinates, plots, roads, or layout_mode to edit');
     }
 
     return requirePlan(await planRepository.editPlan(id, update, options));

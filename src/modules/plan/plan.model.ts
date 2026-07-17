@@ -1,5 +1,5 @@
 import { Document, Schema, Model, model } from 'mongoose';
-import { BeaconType, IPlan, PageOrientation, PageSize, PlanOrigin, PlanType } from './plan.interface';
+import { BeaconType, IPlan, LayoutMode, PageOrientation, PageSize, PlanOrigin, PlanType } from './plan.interface';
 
 export interface PlanDocument extends Document, Omit<IPlan, 'id'> {
     id: string;
@@ -334,6 +334,12 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         layout_parameters: {
             type: layoutParametersSchema,
+        },
+        // No default: legacy plans without the field keep the old behaviour
+        // (manual data wins when present, auto-generate otherwise).
+        layout_mode: {
+            type: String,
+            enum: Object.values(LayoutMode),
         },
         plots: {
             type: [layoutPlotSchema],
