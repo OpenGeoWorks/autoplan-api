@@ -62,6 +62,7 @@ const levelingStationSchema = new Schema(
         intermediate_sight: Number,
         fore_sight: Number,
         reduced_level: Number,
+        uncorrected_reduced_level: Number,
         rise: Number,
         fall: Number,
         height_of_instrument: Number,

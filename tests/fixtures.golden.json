@@ -366,6 +366,7 @@
         "stn": "BM1",
         "back_sight": 1.523,
         "reduced_level": 100,
+        "uncorrected_reduced_level": 100,
         "correction": 0
       },
       {
@@ -374,15 +375,17 @@
         "reduced_level": 99.618,
         "rise": 0,
         "fall": 0.319,
+        "uncorrected_reduced_level": 99.681,
         "correction": -0.063
       },
       {
         "stn": "P2",
-        "back_sight": 1.311,
         "fore_sight": 2.105,
+        "back_sight": 1.311,
         "reduced_level": 99.355,
         "rise": 0,
         "fall": 0.263,
+        "uncorrected_reduced_level": 99.418,
         "correction": -0.063
       },
       {
@@ -391,6 +394,7 @@
         "reduced_level": 98.952,
         "rise": 0,
         "fall": 0.339,
+        "uncorrected_reduced_level": 99.079,
         "correction": -0.127
       },
       {
@@ -399,10 +403,11 @@
         "reduced_level": 99.2,
         "rise": 0.248,
         "fall": 0,
+        "uncorrected_reduced_level": 99.327,
         "correction": -0.127
       }
     ],
-    "misclosure": 0,
+    "misclosure": -0.127,
     "number_of_networks": 2
   },
   "leveling_hi": {
@@ -412,36 +417,41 @@
         "back_sight": 1.523,
         "reduced_level": 100,
         "height_of_instrument": 101.523,
+        "uncorrected_reduced_level": 100,
         "correction": 0
       },
       {
         "stn": "P1",
         "intermediate_sight": 1.842,
         "reduced_level": 99.618,
+        "uncorrected_reduced_level": 99.681,
         "correction": -0.063
       },
       {
         "stn": "P2",
-        "back_sight": 1.311,
         "fore_sight": 2.105,
+        "back_sight": 1.311,
         "reduced_level": 99.355,
         "height_of_instrument": 100.729,
+        "uncorrected_reduced_level": 99.418,
         "correction": -0.063
       },
       {
         "stn": "P3",
         "intermediate_sight": 1.65,
         "reduced_level": 98.952,
+        "uncorrected_reduced_level": 99.079,
         "correction": -0.127
       },
       {
         "stn": "BM2",
         "fore_sight": 1.402,
         "reduced_level": 99.2,
+        "uncorrected_reduced_level": 99.327,
         "correction": -0.127
       }
     ],
-    "misclosure": 0,
+    "misclosure": -0.127,
     "number_of_networks": 2
   },
   "embellishments": {
