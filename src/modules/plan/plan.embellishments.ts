@@ -22,7 +22,27 @@ const FRAME_Y_PERCENT = 1.5;
 
 // Element sizes as a fraction of the square root of the frame area
 const FONT_SIZE_PERCENT = 0.0127;
-const BEACON_SIZE_PERCENT = 0.0127;
+
+/**
+ * Beacon symbol size.
+ *
+ * The drawing is plotted fitted to the sheet, so an element sized as a
+ * fraction of sqrt(frame area) prints at a size that is independent of both
+ * the parcel extent and the plan scale (1:500, 1:1000 and 1:2500 all render
+ * the same). That makes the fraction directly convertible to millimetres on
+ * paper: the printable area of an A4 sheet (210 x 297 mm less the renderer's
+ * 20 mm margins) has a geometric mean of sqrt(170 * 257) ~= 209 mm, so
+ *
+ *     printed size (mm) ~= PERCENT * 209
+ *
+ * Surveyors expect a beacon to read as a neat point marker of about
+ * 1.5-2 mm. The previous 0.0127 printed at ~2.6 mm, which testers reported
+ * as too large, so the fraction is now derived from the target instead of
+ * being a magic number.
+ */
+const BEACON_TARGET_MM = 1.6;
+const A4_PRINTABLE_GEOMEAN_MM = Math.sqrt(170 * 257);
+const BEACON_SIZE_PERCENT = BEACON_TARGET_MM / A4_PRINTABLE_GEOMEAN_MM; // ~0.00766
 const LABEL_SIZE_PERCENT = 0.007;
 const FOOTER_SIZE_PERCENT = 0.0088;
 const POINT_LABEL_SCALE_PERCENT = 0.0014;

@@ -1381,7 +1381,7 @@
   },
   "embellishments": {
     "font_size": 4.2,
-    "beacon_size": 4.2,
+    "beacon_size": 2.5,
     "label_size": 2.3,
     "footer_size": 2.9,
     "point_label_scale": 0.5,

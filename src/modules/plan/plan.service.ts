@@ -108,7 +108,9 @@ export const createPlan = async (data: CreatePlanInput, options?: RepoOptions): 
         origin: PlanOrigin.UTM_ZONE_31,
         scale: 1000,
         beacon_type: BeaconType.BOX,
-        beacon_size: 0.3,
+        // Placeholder until coordinates arrive and computePlanEmbellishments
+        // derives the real size from the drawing extent.
+        beacon_size: 0.18,
         label_size: 0.2,
         page_size: PageSize.A4,
         page_orientation: PageOrientation.PORTRAIT,

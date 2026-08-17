@@ -19,6 +19,25 @@ export enum PlanOrigin {
     UTM_ZONE_31 = 'utm_zone_31',
 }
 
+/**
+ * Human-readable labels for plan origins. Mirrors PLAN_ORIGIN_DISPLAY_NAMES in
+ * the drawing engine (fyp-python/models/plan.py) so the API, the app and the
+ * generated plan all print the same text (e.g. 'UTM Zone 31', not
+ * 'UTM_ZONE_31').
+ */
+export const PLAN_ORIGIN_LABELS: Record<PlanOrigin, string> = {
+    [PlanOrigin.UTM_ZONE_31]: 'UTM Zone 31',
+};
+
+/**
+ * Label for an origin, falling back to the raw value with underscores replaced
+ * by spaces so a newly added origin is still readable without a label.
+ */
+export const planOriginLabel = (origin?: PlanOrigin | string | null): string => {
+    if (!origin) return '';
+    return PLAN_ORIGIN_LABELS[origin as PlanOrigin] ?? String(origin).replace(/_/g, ' ');
+};
+
 export enum BeaconType {
     DOT = 'dot',
     CIRCLE = 'circle',
