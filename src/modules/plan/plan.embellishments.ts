@@ -45,7 +45,19 @@ const A4_PRINTABLE_GEOMEAN_MM = Math.sqrt(170 * 257);
 const BEACON_SIZE_PERCENT = BEACON_TARGET_MM / A4_PRINTABLE_GEOMEAN_MM; // ~0.00766
 const LABEL_SIZE_PERCENT = 0.007;
 const FOOTER_SIZE_PERCENT = 0.0088;
-const POINT_LABEL_SCALE_PERCENT = 0.0014;
+
+/**
+ * Spot-height elevation label size.
+ *
+ * Derived from a target printed height the same way as the beacon (see above):
+ * printed size (mm) ~= PERCENT * 209. The previous 0.0014 printed at ~0.29 mm,
+ * which testers reported as far too small to read ("the spot heights are very
+ * tiny"). A surveyor expects a spot elevation to read at roughly 1.5 mm, on par
+ * with the coordinate/boundary labels and just under the beacon marker, so the
+ * fraction is derived from that target instead of being a magic number.
+ */
+const POINT_LABEL_TARGET_MM = 1.5;
+const POINT_LABEL_SCALE_PERCENT = POINT_LABEL_TARGET_MM / A4_PRINTABLE_GEOMEAN_MM; // ~0.00718
 const CONTOUR_LABEL_SCALE_PERCENT = 0.00488;
 
 // Floor for degenerate inputs (one point, identical points, empty data) so

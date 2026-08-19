@@ -17,6 +17,8 @@ export enum PlanType {
 
 export enum PlanOrigin {
     UTM_ZONE_31 = 'utm_zone_31',
+    UTM_ZONE_32 = 'utm_zone_32',
+    UTM_ZONE_33 = 'utm_zone_33',
 }
 
 /**
@@ -27,6 +29,8 @@ export enum PlanOrigin {
  */
 export const PLAN_ORIGIN_LABELS: Record<PlanOrigin, string> = {
     [PlanOrigin.UTM_ZONE_31]: 'UTM Zone 31',
+    [PlanOrigin.UTM_ZONE_32]: 'UTM Zone 32',
+    [PlanOrigin.UTM_ZONE_33]: 'UTM Zone 33',
 };
 
 /**
