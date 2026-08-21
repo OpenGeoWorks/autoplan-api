@@ -42,6 +42,20 @@ const env = {
      * enough that a job id and a poll would only add latency.
      */
     ASYNC_POINT_THRESHOLD: parseInt(process.env.ASYNC_POINT_THRESHOLD as string, 10) || 25_000,
+    // Uploads at or above this many bytes are parsed by a worker instead of
+    // inside the request. 1 MB is about 25,000 rows of a coordinate file,
+    // which is where generation switches to a job too -- the two thresholds
+    // describe the same point: past here, the wait is long enough that the
+    // browser needs something to look at.
+    ASYNC_UPLOAD_BYTES: parseInt(process.env.ASYNC_UPLOAD_BYTES as string, 10) || 1024 * 1024,
+    // Where an uploaded survey waits between the request that received it and
+    // the worker that parses it.
+    //
+    // Local disk, not object storage: parking a 58 MB file on a remote service
+    // costs about what parsing it costs, which defeats the point of queueing.
+    // The API and the worker must therefore see the same directory -- in
+    // production that means a shared volume between the two containers.
+    UPLOAD_SPOOL_DIR: process.env.UPLOAD_SPOOL_DIR || '/tmp/autoplan-uploads',
     /** How long a finished job's record is kept for the client to collect. */
     JOB_TTL_SECONDS: parseInt(process.env.JOB_TTL_SECONDS as string, 10) || 60 * 60 * 6,
     AWS: {

@@ -3,7 +3,8 @@ import { connectDb, disconnectDb } from '@config/db';
 import { connectRedis, disconnectRedis } from '@config/redis';
 import logger from '@utils/logger';
 import planJobs from '@modules/plan/plan-job';
-import { runPlanJob } from '@modules/plan/plan.service';
+import uploadSpool from '@utils/upload-spool';
+import { runPlanJob, runUploadJob } from '@modules/plan/plan.service';
 
 /**
  * Background plan generation worker (Task 12).
@@ -48,6 +49,15 @@ const main = async (): Promise<void> => {
 
     logger.info(`Plan worker started [${env.ENV}] — queue ${await planJobs.queueDepth()} deep`);
 
+    // A job that dies between the API parking a file and the worker storing it
+    // would leave tens of megabytes behind for ever. Swept on start and daily:
+    // anything older than the job TTL cannot still be wanted.
+    const sweepSpool = () => uploadSpool.sweep(env.JOB_TTL_SECONDS * 1000)
+        .catch(error => logger.warn(`Could not sweep the upload spool: ${error.message}`));
+    await sweepSpool();
+    const sweeper = setInterval(sweepSpool, 24 * 60 * 60 * 1000);
+    sweeper.unref();
+
     process.on('SIGINT', () => void shutdown('SIGINT'));
     process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
@@ -67,14 +77,19 @@ const main = async (): Promise<void> => {
         if (!jobId) continue;
 
         current = jobId;
-        logger.info(`picked up job ${jobId}`);
+        const job = await planJobs.getJob(jobId).catch(() => null);
+        const kind = job?.kind ?? 'generate';
+        logger.info(`picked up ${kind} job ${jobId}`);
         try {
-            // runPlanJob records its own failures on the job, so anything
-            // thrown here is unexpected rather than a failed generation.
-            await runPlanJob(jobId);
+            // Both record their own failures on the job, so anything thrown
+            // here is unexpected rather than a job that simply did not work.
+            if (kind === 'upload') await runUploadJob(jobId);
+            else await runPlanJob(jobId);
         } catch (error) {
             logger.error(`job ${jobId} crashed the worker loop: ${(error as Error).message}`);
-            await planJobs.failJob(jobId, 'The plan could not be generated').catch(() => undefined);
+            await planJobs.failJob(jobId, kind === 'upload'
+                ? 'The survey could not be read'
+                : 'The plan could not be generated').catch(() => undefined);
         } finally {
             current = null;
         }

@@ -25,6 +25,7 @@ import {
     importComputationController,
     inspectCadUploadController,
     uploadCoordinatesController,
+    previewCoordinatesController,
     planJobStatusController,
 } from './plan.controller';
 
@@ -69,6 +70,7 @@ planRouter.post(
 // an array in this process. No body parser is registered for it, which is what
 // leaves `req` readable as a stream.
 planRouter.post('/coordinates/upload/:plan_id', uploadCoordinatesController);
+planRouter.post('/coordinates/preview', previewCoordinatesController);
 
 planRouter.get('/generate/:plan_id', generatePlanController);
 // Progress for a background generation (Task 12). Polled by the client after

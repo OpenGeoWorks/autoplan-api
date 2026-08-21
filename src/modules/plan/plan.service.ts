@@ -16,6 +16,9 @@ import { ColumnMapping } from './coordinate-parser';
 import { PointKind } from './plan.interface';
 import planJobs, { PlanJob } from './plan-job';
 import objectStorage from '@utils/object-storage';
+import uploadSpool from '@utils/upload-spool';
+import { randomUUID } from 'crypto';
+import os from 'os';
 import { computeEmbellishmentsFromExtent, computePlanEmbellishments, computeRouteEmbellishments, PlanEmbellishments } from './plan.embellishments';
 import {
     BeaconType,
@@ -641,6 +644,8 @@ export const uploadCoordinates = async (
         kind?: PointKind;
         mapping?: ColumnMapping;
         maxRows?: number;
+        /** Called with the running row count, for a job to report progress. */
+        onProgress?: (rows: number) => Promise<void> | void;
         /** Declared upload size, when the client sent one. */
         declaredBytes?: number;
     },
@@ -671,6 +676,7 @@ export const uploadCoordinates = async (
     await planPoints.clearPoints(id, kind);
 
     let seq = 0;
+    let rows = 0;
     let preview: CoordinateProps[] = [];
 
     // Writes are kept in flight rather than awaited one at a time. Storing a
@@ -705,6 +711,8 @@ export const uploadCoordinates = async (
                 if (preview.length < PREVIEW_LIMIT) {
                     preview = preview.concat(batch).slice(0, PREVIEW_LIMIT);
                 }
+                rows += batch.length;
+                if (meta.onProgress) await meta.onProgress(rows);
             },
             {
                 mapping: meta.mapping,
@@ -776,6 +784,11 @@ export const runPlanJob = async (jobId: string): Promise<void> => {
     const job = await planJobs.getJob(jobId);
     if (!job) {
         logger.warn(`job ${jobId} vanished before it could run`);
+        return;
+    }
+
+    if (!(await planJobs.claimJob(jobId, `${process.pid}@${os.hostname()}`))) {
+        logger.warn(`job ${jobId} is already claimed; leaving it alone`);
         return;
     }
 
@@ -1065,6 +1078,167 @@ const preparePlanForDrawing = async (id: string, plan: IPlan): Promise<void> => 
  * exporting the points, shipping them, triangulating and contouring all scale
  * with it.
  */
+/**
+ * Whether an upload is too big to parse inside the request.
+ *
+ * Judged on the declared size, because it is the only thing known before a
+ * byte is read. The default corresponds to roughly the point count at which
+ * generation switches to a job, so the two thresholds mean the same thing:
+ * past here, a request held open tells the user nothing while it works.
+ */
+export const shouldQueueUpload = (declaredBytes?: number): boolean =>
+    Boolean(declaredBytes && declaredBytes >= env.ASYNC_UPLOAD_BYTES);
+
+export interface UploadResult {
+    plan?: IPlan;
+    job?: PlanJob;
+}
+
+/**
+ * Take a coordinate upload, inline or as a background job.
+ *
+ * A large file is written to the upload spool and a job id returned straight
+ * away. Parsing and storing a 1.5-million-point survey is about a minute of
+ * database round trips, and a request held open that long is a hang as far as
+ * the browser is concerned.
+ *
+ * The file goes to local disk rather than to object storage. That was the
+ * first design and it was measured out: pushing 58 MB to a remote service
+ * took longer than parsing and storing the survey outright, so the client
+ * would have waited just as long for the privilege of waiting again.
+ */
+export const receiveCoordinateUpload = async (
+    id: string,
+    file: Readable,
+    meta: {
+        fileName?: string;
+        kind?: PointKind;
+        mapping?: ColumnMapping;
+        maxRows?: number;
+        declaredBytes?: number;
+    },
+    userId: string,
+    options?: RepoOptions,
+    /** Record the job without publishing it, so the caller can run it. */
+    publish = true,
+): Promise<UploadResult> => {
+    if (!shouldQueueUpload(meta.declaredBytes)) {
+        // Small enough that the wait is shorter than the round trip it would
+        // take to hand it off.
+        return { plan: await uploadCoordinates(id, file, meta, options) };
+    }
+
+    // Confirm the plan exists and that this caller may write to it before
+    // spending any time on the file itself.
+    const plan = requirePlan(await planRepository.getPlanById(id, options));
+
+    if (meta.declaredBytes && meta.declaredBytes > env.MAX_UPLOAD_BYTES) {
+        throw new ApiError(413,
+            `That file is ${Math.round(meta.declaredBytes / (1024 * 1024))} MB, over the ` +
+            `${Math.round(env.MAX_UPLOAD_BYTES / (1024 * 1024))} MB upload limit. ` +
+            'Split the survey or reduce it before uploading.');
+    }
+
+    const spoolId = randomUUID();
+    await uploadSpool.park(spoolId, file);
+
+    let job;
+    try {
+        job = await planJobs.createJob(id, userId, 0, {
+            kind: 'upload',
+            queue: publish,
+            payload: {
+                spoolId,
+                fileName: meta.fileName,
+                kindOfPoints: (meta.kind ?? 'coordinates') as 'coordinates' | 'boundary',
+                mapping: meta.mapping,
+                bytes: meta.declaredBytes ?? await uploadSpool.sizeOf(spoolId),
+            },
+        });
+    } catch (error) {
+        // No job means nothing will ever read the file.
+        await uploadSpool.discard(spoolId);
+        throw error;
+    }
+
+    logger.info(`queued upload for plan ${plan.id} as job ${job.id} `
+        + `(${((meta.declaredBytes ?? 0) / 1e6).toFixed(1)} MB)`);
+    return { job };
+};
+
+/**
+ * Worker side of a coordinate upload: read the spooled file, parse it, store
+ * it, and report progress as it goes.
+ */
+export const runUploadJob = async (jobId: string): Promise<void> => {
+    const job = await planJobs.getJob(jobId);
+    if (!job) throw new Error(`job ${jobId} not found`);
+
+    const payload = job.payload;
+    if (!payload?.spoolId) throw new Error(`upload job ${jobId} has no spooled file`);
+
+    if (!(await planJobs.claimJob(jobId, `${process.pid}@${os.hostname()}`))) {
+        logger.warn(`upload job ${jobId} is already claimed; leaving it alone`);
+        return;
+    }
+
+    if (!(await uploadSpool.exists(payload.spoolId))) {
+        // Almost always means the worker cannot see the API's spool directory.
+        // Worth saying so plainly: the alternative is a job that fails with
+        // "file not found" and a long afternoon.
+        await planJobs.failJob(jobId,
+            'The uploaded file could not be found. The API and the worker must '
+            + 'share the upload spool directory (UPLOAD_SPOOL_DIR).');
+        logger.error(`upload job ${jobId}: ${payload.spoolId} is not in `
+            + `${env.UPLOAD_SPOOL_DIR} -- is the spool shared with the API?`);
+        return;
+    }
+
+    try {
+        // Rows are the unit the client sees, so progress is reported in rows.
+        // The total is estimated from the file size until the parse finishes:
+        // the real count is not known until the last row is read.
+        const estimate = payload.bytes ? Math.max(1, Math.round(payload.bytes / 40)) : 0;
+        let lastReport = 0;
+
+        await planJobs.reportProgress(jobId, 'reading the survey', 0, estimate);
+
+        const plan = await uploadCoordinates(
+            job.plan,
+            uploadSpool.read(payload.spoolId),
+            {
+                fileName: payload.fileName,
+                kind: payload.kindOfPoints,
+                mapping: payload.mapping as ColumnMapping | undefined,
+                declaredBytes: payload.bytes,
+                onProgress: async rows => {
+                    // The client polls every 1.5s; reporting more often than
+                    // it can read is noise on both sides.
+                    if (rows - lastReport < 25_000) return;
+                    lastReport = rows;
+                    await planJobs.reportProgress(
+                        jobId, 'storing survey points', rows, Math.max(estimate, rows),
+                    );
+                },
+            },
+        );
+
+        await planJobs.completeUpload(
+            jobId,
+            plan.point_count ?? 0,
+            plan.point_source?.skipped_rows ?? 0,
+        );
+    } catch (error) {
+        const message = error instanceof ApiError
+            ? error.message
+            : 'The survey could not be read';
+        await planJobs.failJob(jobId, message);
+        logger.error(`upload job ${jobId} failed: ${(error as Error).message}`);
+    } finally {
+        await uploadSpool.discard(payload.spoolId);
+    }
+};
+
 export const shouldRunAsync = (plan: IPlan): boolean =>
     (plan.point_count ?? 0) >= env.ASYNC_POINT_THRESHOLD;
 

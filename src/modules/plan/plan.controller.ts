@@ -5,6 +5,11 @@ import { ApiError } from '@utils/api-error';
 import { parseQuery } from '@utils/query-parser';
 import { RepoOptions } from '@db/types';
 import * as planService from './plan.service';
+import { previewText } from './coordinate-parser';
+
+/** Most of a file the preview endpoint will read. Enough rows to judge the
+ *  columns by, far too few to be a way of uploading a survey. */
+const PREVIEW_BYTES = 256 * 1024;
 import planJobs from './plan-job';
 import {
     CreatePlanInput,
@@ -246,6 +251,38 @@ export const editLayoutDataController = catchAsync(async (req: Request, res: Res
  * which the whole survey exists as an array. Metadata that used to ride in
  * form fields travels as query parameters instead.
  */
+/**
+ * Column preview for the mapping dialog.
+ *
+ * The client sends the first few kilobytes of the file and gets back the
+ * delimiter, whether there is a header, the detected column mapping and a
+ * handful of sample rows. Nothing else: the point of moving parsing to the
+ * server was that a survey never has to fit in a browser tab, and that would
+ * be undone by shipping every row back so the user could pick columns.
+ */
+export const previewCoordinatesController = catchAsync(async (req: Request, res: Response) => {
+    const chunks: Buffer[] = [];
+    let bytes = 0;
+
+    await new Promise<void>((resolve, reject) => {
+        req.on('data', (chunk: Buffer) => {
+            // Hard cap. The head of the file is all that is needed, and this
+            // endpoint must never become a way to push a whole survey into
+            // memory.
+            if (bytes >= PREVIEW_BYTES) return;
+            bytes += chunk.length;
+            chunks.push(chunk);
+        });
+        req.on('end', () => resolve());
+        req.on('error', reject);
+    });
+
+    const text = Buffer.concat(chunks).slice(0, PREVIEW_BYTES).toString('utf8');
+    if (!text.trim()) throw ApiError.badRequest('No file content was received');
+
+    sendSuccess(res, previewText(text));
+});
+
 export const uploadCoordinatesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as Record<string, string>;
 
@@ -258,7 +295,7 @@ export const uploadCoordinatesController = catchAsync(async (req: Request, res: 
         }
     }
 
-    const plan = await planService.uploadCoordinates(
+    const result = await planService.receiveCoordinateUpload(
         req.params.plan_id,
         req,
         {
@@ -270,9 +307,18 @@ export const uploadCoordinatesController = catchAsync(async (req: Request, res: 
                 ? Number(req.headers['content-length'])
                 : undefined,
         },
+        String((req as any).user?.id ?? (req as any).user?._id ?? ''),
         ownerOptions(req),
     );
-    sendSuccess(res, plan);
+
+    // 202 for a queued upload, so the client can tell "stored" from "will be
+    // stored" without inspecting the body.
+    if (result.job) {
+        res.status(202);
+        sendSuccess(res, { job: result.job });
+        return;
+    }
+    sendSuccess(res, result.plan);
 });
 
 export const inspectCadUploadController = catchAsync(async (req: Request, res: Response) => {
