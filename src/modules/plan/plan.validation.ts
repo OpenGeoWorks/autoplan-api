@@ -233,6 +233,14 @@ export const validateEditForwardData = (req: Request): void => {
     });
 };
 
+export const validateEditBackData = (req: Request): void => {
+    validator.validate(req.body as Record<string, unknown>, {
+        points: 'required|array|min:2',
+        'points.*': coordinateRules,
+        close_ring: 'boolean',
+    });
+};
+
 export const validateEditDifferentialLevelingData = (req: Request): void => {
     validator.validate(req.body as Record<string, unknown>, levelingRules);
 };

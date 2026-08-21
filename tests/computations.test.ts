@@ -154,10 +154,46 @@ const walk = (a: unknown, b: unknown, p: string): void => {
 
 walk(golden, actual, '$');
 
-if (diffs.length === 0) {
+/**
+ * Behavioural checks that are not snapshots of the old implementation.
+ */
+const checks: string[] = [];
+const expect = (label: string, got: unknown, want: unknown): void => {
+    const ok =
+        typeof got === 'number' && typeof want === 'number'
+            ? Math.abs(got - want) <= 1e-9
+            : got === want;
+    if (!ok) checks.push(`${label}: ${JSON.stringify(got)} vs expected ${JSON.stringify(want)}`);
+};
+
+// A join between two stations is a valid back computation, but the controller
+// always asks for an area and two points enclose none. Calling computeArea
+// unguarded here made the simplest case fail with "At least 3 points are
+// required to compute area"; polygonArea returns 0 instead.
+const join = backComputation({
+    points: [
+        { id: 'A', northing: 712345.0, easting: 543210.0 },
+        { id: 'B', northing: 712345.0, easting: 543310.0 },
+    ],
+    area: true,
+    round: true,
+});
+expect('two-point join leg count', join.traverse_legs.length, 1);
+expect('two-point join distance', join.traverse.total_distance, 100);
+expect('two-point join bearing', join.traverse_legs[0].bearing?.degrees, 90);
+expect('two-point join area', join.traverse.area, 0);
+
+if (diffs.length === 0 && checks.length === 0) {
     console.log('✔ all computation outputs match the golden fixtures');
+    console.log('✔ two-point back computation returns a join and no area');
 } else {
-    console.error(`✖ ${diffs.length} differences from golden fixtures:`);
-    diffs.slice(0, 40).forEach(d => console.error('  ' + d));
+    if (diffs.length) {
+        console.error(`✖ ${diffs.length} differences from golden fixtures:`);
+        diffs.slice(0, 40).forEach(d => console.error('  ' + d));
+    }
+    if (checks.length) {
+        console.error(`✖ ${checks.length} failed checks:`);
+        checks.forEach(c => console.error('  ' + c));
+    }
     process.exit(1);
 }

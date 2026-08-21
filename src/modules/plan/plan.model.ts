@@ -90,6 +90,14 @@ const traverseComputationSchema = new Schema(
     { _id: false },
 );
 
+const backComputationSchema = new Schema(
+    {
+        points: [coordinateSchema],
+        close_ring: Boolean,
+    },
+    { _id: false },
+);
+
 const differentialLevelingSchema = new Schema(
     {
         stations: [levelingStationSchema],
@@ -317,6 +325,9 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         traverse_computation_data: {
             type: traverseComputationSchema,
+        },
+        back_computation_data: {
+            type: backComputationSchema,
         },
         differential_leveling_data: {
             type: differentialLevelingSchema,

@@ -332,6 +332,14 @@ export const editForwardComputation = async (
     return requirePlan(await planRepository.editPlan(id, { forward_computation_data: data }, options));
 };
 
+export const editBackComputation = async (
+    id: string,
+    data: IPlan['back_computation_data'],
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    return requirePlan(await planRepository.editPlan(id, { back_computation_data: data }, options));
+};
+
 export const editDifferentialLeveling = async (
     id: string,
     data: IPlan['differential_leveling_data'],
@@ -1083,7 +1091,13 @@ export const generatePlan = async (
 /** Run a plan's stored computations and write the results into its coordinates/boundary/elevations. */
 const applyComputationsToPlan = async (
     plan: IPlan,
-    source: Pick<IPlan, 'forward_computation_data' | 'traverse_computation_data' | 'differential_leveling_data'>,
+    source: Pick<
+        IPlan,
+        | 'forward_computation_data'
+        | 'traverse_computation_data'
+        | 'back_computation_data'
+        | 'differential_leveling_data'
+    >,
     replace: boolean,
 ): Promise<void> => {
     const applyCoordinates = async (raw: CoordinateProps[]) => {
@@ -1131,6 +1145,13 @@ const applyComputationsToPlan = async (
         }
 
         await applyCoordinates(coordinates);
+    }
+
+    if (source.back_computation_data) {
+        // Back computation starts from coordinates rather than deriving them, so
+        // the stored points are the coordinates. A closing point repeated at the
+        // end is a drawing artefact, not a station, and dedupeById drops it.
+        await applyCoordinates(source.back_computation_data.points);
     }
 
     if (source.differential_leveling_data && plan.type === PlanType.ROUTE) {
@@ -1190,6 +1211,7 @@ export const importComputation = async (
     const edit: Partial<IPlan> = {};
     if (computation.forward_computation_data) edit.forward_computation_data = computation.forward_computation_data;
     if (computation.traverse_computation_data) edit.traverse_computation_data = computation.traverse_computation_data;
+    if (computation.back_computation_data) edit.back_computation_data = computation.back_computation_data;
     if (computation.differential_leveling_data)
         edit.differential_leveling_data = computation.differential_leveling_data;
 

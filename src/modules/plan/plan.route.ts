@@ -15,6 +15,7 @@ import {
     editParcelsController,
     editTraverseComputationController,
     editForwardComputationController,
+    editBackComputationController,
     editDifferentialLevelingController,
     editTopoBoundaryController,
     editTopoSettingController,
@@ -50,6 +51,7 @@ planRouter.put('/layout/data/edit/:plan_id', editLayoutDataController);
 
 planRouter.put('/traverse-data/edit/:plan_id', editTraverseComputationController);
 planRouter.put('/forward-data/edit/:plan_id', editForwardComputationController);
+planRouter.put('/back-data/edit/:plan_id', editBackComputationController);
 planRouter.put('/differential-leveling-data/edit/:plan_id', editDifferentialLevelingController);
 
 // Legacy CAD import (Task 11). The multipart body is forwarded to the drawing

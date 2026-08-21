@@ -146,6 +146,16 @@ export const editForwardComputationController = catchAsync(async (req: Request, 
     sendSuccess(res, plan);
 });
 
+export const editBackComputationController = catchAsync(async (req: Request, res: Response) => {
+    validate.validateEditBackData(req);
+    const plan = await planService.editBackComputation(
+        req.params.plan_id,
+        req.body,
+        ownerOptions(req, { back_computation_data: 1 }),
+    );
+    sendSuccess(res, plan);
+});
+
 export const editDifferentialLevelingController = catchAsync(async (req: Request, res: Response) => {
     validate.validateEditDifferentialLevelingData(req);
     const plan = await planService.editDifferentialLeveling(

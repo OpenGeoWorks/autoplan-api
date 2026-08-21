@@ -214,6 +214,16 @@ export interface TraverseComputationData {
     misclosure_correction?: boolean;
 }
 
+export interface BackComputationData {
+    points: CoordinateProps[];
+    /**
+     * Repeat the first point at the end so the closing leg is computed and the
+     * area means the same shape as the legs. A ring (a cadastral parcel) is
+     * closed; an open traverse (a route centreline) is not, and reports no area.
+     */
+    close_ring?: boolean;
+}
+
 export interface DifferentialLevelingData {
     stations: LevelingStationProps[];
     method: LevelingMethod;
@@ -247,6 +257,7 @@ export interface IPlan {
     surveyor_name?: string;
     forward_computation_data?: ForwardComputationData;
     traverse_computation_data?: TraverseComputationData;
+    back_computation_data?: BackComputationData;
     differential_leveling_data?: DifferentialLevelingData;
     topographic_boundary?: TopographicBoundary;
     topographic_setting?: TopographicSetting;

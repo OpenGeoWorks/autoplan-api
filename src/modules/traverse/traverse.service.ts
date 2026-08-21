@@ -115,7 +115,10 @@ export const backComputation = (data: BackComputationInput): BackComputationResu
     };
 
     if (data.area) {
-        traverse.area = computeArea({ points: data.points, round: true }).area;
+        // polygonArea, not computeArea: two points enclose nothing, and a join
+        // between two stations is a valid back computation that must not be
+        // refused just because it was also asked for an area.
+        traverse.area = polygonArea(data.points, true);
     }
 
     return {
