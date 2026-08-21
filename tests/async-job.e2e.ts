@@ -23,6 +23,7 @@ import Plan from '@modules/plan/plan.model';
 import planPoints from '@modules/plan/plan-points.repository';
 import planJobs from '@modules/plan/plan-job';
 import * as planService from '@modules/plan/plan.service';
+import assertScratchDatabase from '@utils/scratch-db';
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = '') => {
@@ -55,7 +56,9 @@ const makePlan = async (name: string) =>
     } as any);
 
 const main = async () => {
-    await mongoose.connect(process.env.MONGO_URI!);
+    // Fails closed unless MONGO_URI is a loopback scratch database: the
+    // next line deletes everything it is pointed at.
+    await mongoose.connect(assertScratchDatabase(process.env.MONGO_URI));
     await mongoose.connection.db!.dropDatabase();
     await connectRedis();
 

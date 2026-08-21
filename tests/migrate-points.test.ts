@@ -14,6 +14,7 @@ import { execFileSync } from 'child_process';
 import mongoose from 'mongoose';
 import Plan from '@modules/plan/plan.model';
 import planPoints, { PREVIEW_LIMIT } from '@modules/plan/plan-points.repository';
+import assertScratchDatabase from '@utils/scratch-db';
 
 let failures = 0;
 const check = (name: string, ok: boolean, detail = '') => {
@@ -43,7 +44,9 @@ const runMigration = (extra: string[] = []): string =>
                  { env: { ...process.env, MONGO_URI: uri }, encoding: 'utf8' });
 
 const main = async () => {
-    await mongoose.connect(uri);
+    // Fails closed unless MONGO_URI is a loopback scratch database: the
+    // next line deletes everything it is pointed at.
+    await mongoose.connect(assertScratchDatabase(uri));
     await mongoose.connection.db!.dropDatabase();
 
     const small = await makePlan('small survey', 12);
