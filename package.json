@@ -20,11 +20,20 @@
         "build:watch": "tsc -p tsconfig-build.json --watch",
         "dev": "nodemon --watch src --ext ts,html --exec \"ts-node -r tsconfig-paths/register src/server.ts\"",
         "prettier": "npx prettier --write .",
-        "test": "ts-node -r tsconfig-paths/register tests/computations.test.ts"
+        "test": "ts-node -r tsconfig-paths/register tests/computations.test.ts",
+        "migrate:points": "ts-node -r tsconfig-paths/register scripts/migrate-plan-points.ts",
+        "test:parser": "ts-node -r tsconfig-paths/register tests/coordinate-parser.test.ts",
+        "test:points": "ts-node -r tsconfig-paths/register tests/plan-points.test.ts",
+        "test:migrate": "ts-node -r tsconfig-paths/register tests/migrate-points.test.ts",
+        "worker": "node -r module-alias/register dist/worker.js",
+        "worker:dev": "nodemon --watch src --ext ts --exec \"ts-node -r tsconfig-paths/register src/worker.ts\"",
+        "test:async": "ts-node -r tsconfig-paths/register tests/async-job.e2e.ts",
+        "test:pipeline": "ts-node -r tsconfig-paths/register tests/query-pipeline.test.ts"
     },
     "dependencies": {
         "@aws-sdk/client-ses": "^3.888.0",
         "bcrypt": "^6.0.0",
+        "cloudinary": "^2.10.1",
         "cors": "^2.8.5",
         "dotenv": "^17.2.0",
         "express": "^5.1.0",
@@ -48,12 +57,12 @@
         "@types/node": "^24.1.0",
         "@types/validatorjs": "^3.15.5",
         "copyfiles": "^2.4.1",
+        "nodemon": "^3.1.14",
         "prettier": "^3.6.2",
         "rimraf": "^6.0.1",
-        "typescript": "^5.8.3",
         "ts-node": "^10.9.2",
-        "nodemon": "^3.1.14",
-        "tsconfig-paths": "^4.2.0"
+        "tsconfig-paths": "^4.2.0",
+        "typescript": "^5.8.3"
     },
     "_moduleAliases": {
         "@config": "dist/config",

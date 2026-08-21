@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { IUser } from '@modules/user/user.interface';
 import { IProject } from '@modules/project/project.interface';
 import {
@@ -258,11 +259,94 @@ export interface IPlan {
     page_orientation?: PageOrientation;
     footers: string[];
     footer_size: number;
+    /**
+     * Draw a bearing/distance schedule on the sheet, so the plan is
+     * self-contained for submission (Task 10). Cadastral plans list the parcel
+     * legs; topographic and layout plans list their boundary legs. Not used by
+     * route plans.
+     */
+    show_bearing_distance_table?: boolean;
+    /**
+     * Draw a coordinate schedule on the sheet. Cadastral plans list the beacon
+     * register; topographic and layout plans list their boundary coordinates,
+     * and layout additionally lists the plot-corner register.
+     */
+    show_coordinate_table?: boolean;
+    /**
+     * Resolve text and symbol sizes from the plotting scale rather than from
+     * the drawing extent (Task 8). On by default in the drawing service: map
+     * plans are plotted at their declared scale, so a printed millimetre size
+     * converts straight to model units and picking a scale is all a user has
+     * to do to get a legible sheet. Turn it off to size everything manually
+     * from font_size / label_size / footer_size / beacon_size.
+     */
+    auto_scale_sizes?: boolean;
+    /** Per-element printed height overrides in millimetres, e.g. { bearing_distance: 3.0 }. */
+    text_heights?: Record<string, number>;
+    /**
+     * Zoom out to the next standard scale when the survey does not fit the
+     * chosen sheet, instead of failing. The title block always states the
+     * scale the sheet was actually drawn at.
+     */
+    fit_scale_to_sheet?: boolean;
     longitudinal_profile_parameters?: LongitudinalProfileParameters;
     route_parameters?: RouteParameters;
     dxf_version?: string; // e.g. R12, R2000
+    /**
+     * How many survey points the plan holds (Task 12). Points themselves live
+     * in the bucketed `plan_points` collection, not in this document -- an
+     * embedded array hits MongoDB's 16 MB limit at roughly 200,000 points.
+     * `coordinates` above carries only a preview for display.
+     */
+    point_count?: number;
+    /** Extent of the stored points, so screens can show scope without loading them. */
+    point_summary?: PointSummary;
+    /**
+     * How much storage this plan occupies (Task 12): the plan document itself
+     * plus its point buckets. Recorded so a survey's weight is visible without
+     * measuring it, and so the generation path can be chosen from data rather
+     * than from a guess.
+     */
+    size?: {
+        document_bytes?: number;
+        points_bytes?: number;
+        total_bytes?: number;
+        measured_at?: Date;
+    };
+    /** The uploaded source file, kept as the canonical record of the survey. */
+    point_source?: {
+        file_name?: string;
+        url?: string;
+        row_count?: number;
+        skipped_rows?: number;
+        uploaded_at?: Date;
+    };
     /** Computation-only "plans" hold field computations that can later be converted or imported. */
     computation_only: boolean;
+}
+
+/** Which series of points a bucket holds. */
+export type PointKind = 'coordinates' | 'boundary';
+
+export interface IPlanPointBucket {
+    plan: Types.ObjectId;
+    kind: PointKind;
+    seq: number;
+    count: number;
+    points: CoordinateProps[];
+    created_at?: Date;
+    updated_at?: Date;
+}
+
+/** Count and extent of a stored point series, computed in the database. */
+export interface PointSummary {
+    count: number;
+    min_easting?: number;
+    max_easting?: number;
+    min_northing?: number;
+    max_northing?: number;
+    min_elevation?: number;
+    max_elevation?: number;
 }
 
 export type CreatePlanInput = Pick<IPlan, 'name' | 'type' | 'project' | 'computation_only'>;
@@ -290,6 +374,11 @@ export type EditPlanInput = Partial<
         | 'footers'
         | 'footer_size'
         | 'dxf_version'
+        | 'show_bearing_distance_table'
+        | 'show_coordinate_table'
+        | 'auto_scale_sizes'
+        | 'text_heights'
+        | 'fit_scale_to_sheet'
     >
 >;
 

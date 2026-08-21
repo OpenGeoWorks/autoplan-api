@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { authenticate } from '@middlewares/auth';
 import {
     editRouteParametersController,
@@ -22,6 +22,9 @@ import {
     generatePlanController,
     convertComputationController,
     importComputationController,
+    inspectCadUploadController,
+    uploadCoordinatesController,
+    planJobStatusController,
 } from './plan.controller';
 
 export const planRouter = Router();
@@ -49,6 +52,25 @@ planRouter.put('/traverse-data/edit/:plan_id', editTraverseComputationController
 planRouter.put('/forward-data/edit/:plan_id', editForwardComputationController);
 planRouter.put('/differential-leveling-data/edit/:plan_id', editDifferentialLevelingController);
 
+// Legacy CAD import (Task 11). The multipart body is forwarded to the drawing
+// engine untouched, so it is read as a raw buffer rather than parsed here --
+// no multipart dependency, and the API keeps the two things it owns:
+// authentication (applied to this router) and the upload size limit.
+planRouter.post(
+    '/cad/inspect',
+    express.raw({ type: 'multipart/form-data', limit: '32mb' }),
+    inspectCadUploadController,
+);
+
+// Coordinate file upload (Task 12). The raw body is the file: it is piped
+// straight into the streaming parser, so a million-row survey never exists as
+// an array in this process. No body parser is registered for it, which is what
+// leaves `req` readable as a stream.
+planRouter.post('/coordinates/upload/:plan_id', uploadCoordinatesController);
+
 planRouter.get('/generate/:plan_id', generatePlanController);
+// Progress for a background generation (Task 12). Polled by the client after
+// /generate answers 202 with a job id.
+planRouter.get('/job/:job_id', planJobStatusController);
 planRouter.put('/computation/convert/:plan_id', convertComputationController);
 planRouter.put('/import/:plan_id', importComputationController);

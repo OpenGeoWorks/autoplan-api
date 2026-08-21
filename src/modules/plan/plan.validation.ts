@@ -42,6 +42,10 @@ export const validateEditPlan = (req: Request): void => {
         'footers.*': 'string',
         footer_size: 'numeric',
         dxf_version: 'string',
+        show_bearing_distance_table: 'boolean',
+        show_coordinate_table: 'boolean',
+        auto_scale_sizes: 'boolean',
+        fit_scale_to_sheet: 'boolean',
     });
 };
 

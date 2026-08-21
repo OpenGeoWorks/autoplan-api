@@ -239,9 +239,13 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
             type: String,
             default: 'Arial',
         },
+        // Printed height of the plan title in millimetres. Governs the title
+        // block only -- the drawing engine sizes the map annotation from
+        // label_size and the footer from footer_size. 5 mm is the engine's
+        // designed title height, so an unset plan is drawn as designed.
         font_size: {
             type: Number,
-            default: 12,
+            default: 5,
         },
         coordinates: {
             type: [coordinateSchema],
@@ -289,13 +293,16 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
             enum: Object.values(BeaconType),
             default: BeaconType.NONE,
         },
+        // Printed width of the beacon symbol, in millimetres.
         beacon_size: {
             type: Number,
-            default: 0.3,
+            default: 1.6,
         },
+        // Printed height of the map annotation (beacon names, bearings and
+        // distances, quoted coordinates), in millimetres.
         label_size: {
             type: Number,
-            default: 0.2,
+            default: 2.5,
         },
         personel_name: {
             type: String,
@@ -354,9 +361,78 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
             type: [String],
             default: [],
         },
+        // Printed height of the footer text, in millimetres.
         footer_size: {
             type: Number,
-            default: 0.5,
+            default: 2.5,
+        },
+        /**
+         * Survey point bookkeeping (Task 12). The points themselves live in
+         * the bucketed `plan_points` collection; `coordinates` above holds a
+         * preview. These must be declared here or Mongoose silently drops
+         * them on write, leaving a truncated preview looking like the whole
+         * survey.
+         */
+        point_count: {
+            type: Number,
+        },
+        point_summary: {
+            type: new Schema(
+                {
+                    count: Number,
+                    min_easting: Number,
+                    max_easting: Number,
+                    min_northing: Number,
+                    max_northing: Number,
+                    min_elevation: Number,
+                    max_elevation: Number,
+                },
+                { _id: false },
+            ),
+        },
+        size: {
+            type: new Schema(
+                {
+                    document_bytes: Number,
+                    points_bytes: Number,
+                    total_bytes: Number,
+                    measured_at: Date,
+                },
+                { _id: false },
+            ),
+        },
+        point_source: {
+            type: new Schema(
+                {
+                    file_name: String,
+                    url: String,
+                    row_count: Number,
+                    skipped_rows: Number,
+                    uploaded_at: Date,
+                },
+                { _id: false },
+            ),
+        },
+        show_bearing_distance_table: {
+            type: Boolean,
+            default: false,
+        },
+        show_coordinate_table: {
+            type: Boolean,
+            default: false,
+        },
+        auto_scale_sizes: {
+            type: Boolean,
+            default: true,
+        },
+        text_heights: {
+            type: Map,
+            of: Number,
+            default: undefined,
+        },
+        fit_scale_to_sheet: {
+            type: Boolean,
+            default: true,
         },
         longitudinal_profile_parameters: {
             type: longitudinalProfileParametersSchema,

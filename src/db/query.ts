@@ -143,9 +143,16 @@ export const searchIndexPipeline = (
     const visibleFields = (): string[] => {
         const fields: string[] = [];
         schema?.eachPath((path, type) => {
-            if (type.options.select !== false && !['__v'].includes(path)) {
-                fields.push(path);
-            }
+            if (type.options.select === false || path === '__v') return;
+
+            // Mongoose registers a Map's values under a `$*` wildcard path
+            // (e.g. `text_heights.$*`). MongoDB rejects a projection field
+            // beginning with `$`, so the whole aggregate fails. The parent
+            // path is registered separately and projects the entire map, so
+            // dropping the wildcard loses nothing.
+            if (path.includes('$')) return;
+
+            fields.push(path);
         });
         return fields;
     };

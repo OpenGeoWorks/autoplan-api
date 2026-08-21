@@ -1384,7 +1384,7 @@
     "beacon_size": 2.5,
     "label_size": 2.3,
     "footer_size": 2.9,
-    "point_label_scale": 0.5,
+    "point_label_scale": 2.4,
     "contour_label_scale": 1.6
   }
 }

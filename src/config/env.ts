@@ -21,6 +21,29 @@ const env = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
     PYTHON_SERVER: process.env.PYTHON_SERVER || '',
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || '*',
+    CLOUDINARY_URL: process.env.CLOUDINARY_URL || '',
+    /**
+     * Largest survey the service accepts.
+     *
+     * PROVISIONAL. Set from the synthetic benchmark -- a million points draw in
+     * well under a minute, so twice that leaves headroom -- not from real GNSS
+     * or LiDAR files, which cluster, duplicate and carry outliers in ways
+     * uniform test data does not. Revise it once real files have been measured;
+     * the point of having a number at all is that an impossible upload is
+     * refused in the first second rather than after twenty minutes of work.
+     */
+    MAX_SURVEY_POINTS: parseInt(process.env.MAX_SURVEY_POINTS as string, 10) || 2_000_000,
+    /** Upload ceiling in bytes; roughly 78 bytes per point of CSV. */
+    MAX_UPLOAD_BYTES:
+        parseInt(process.env.MAX_UPLOAD_BYTES as string, 10) || 256 * 1024 * 1024,
+    /**
+     * Surveys at or above this many points are generated as a background job
+     * rather than in the request (Task 12). Below it the round trip is quick
+     * enough that a job id and a poll would only add latency.
+     */
+    ASYNC_POINT_THRESHOLD: parseInt(process.env.ASYNC_POINT_THRESHOLD as string, 10) || 25_000,
+    /** How long a finished job's record is kept for the client to collect. */
+    JOB_TTL_SECONDS: parseInt(process.env.JOB_TTL_SECONDS as string, 10) || 60 * 60 * 6,
     AWS: {
         secretAccessKey: process.env.AWS_SECRET_KEY as string,
         accessKeyId: process.env.AWS_ACCESS_KEY as string,

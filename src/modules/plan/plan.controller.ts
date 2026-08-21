@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import catchAsync from '@utils/catch-async';
 import { sendSuccess, sendNoContent } from '@utils/api-response';
+import { ApiError } from '@utils/api-error';
 import { parseQuery } from '@utils/query-parser';
 import { RepoOptions } from '@db/types';
 import * as planService from './plan.service';
+import planJobs from './plan-job';
 import {
     CreatePlanInput,
     EditPlanInput,
@@ -226,9 +228,64 @@ export const editLayoutDataController = catchAsync(async (req: Request, res: Res
     sendSuccess(res, plan);
 });
 
-export const generatePlanController = catchAsync(async (req: Request, res: Response) => {
-    const result = await planService.generatePlan(req.params.plan_id, ownerOptions(req));
+/**
+ * Upload a coordinate file (Task 12).
+ *
+ * The request body is the file itself, streamed straight into the parser --
+ * there is no multipart wrapper to unpick and, more to the point, no step at
+ * which the whole survey exists as an array. Metadata that used to ride in
+ * form fields travels as query parameters instead.
+ */
+export const uploadCoordinatesController = catchAsync(async (req: Request, res: Response) => {
+    const query = req.query as Record<string, string>;
+
+    let mapping;
+    if (query.mapping) {
+        try {
+            mapping = JSON.parse(query.mapping);
+        } catch {
+            throw ApiError.badRequest('mapping must be JSON');
+        }
+    }
+
+    const plan = await planService.uploadCoordinates(
+        req.params.plan_id,
+        req,
+        {
+            fileName: query.file_name,
+            kind: query.kind === 'boundary' ? 'boundary' : 'coordinates',
+            mapping,
+            maxRows: query.max_rows ? Number(query.max_rows) : undefined,
+            declaredBytes: req.headers['content-length']
+                ? Number(req.headers['content-length'])
+                : undefined,
+        },
+        ownerOptions(req),
+    );
+    sendSuccess(res, plan);
+});
+
+export const inspectCadUploadController = catchAsync(async (req: Request, res: Response) => {
+    const body = req.body as Buffer;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+        throw ApiError.badRequest('No file was uploaded');
+    }
+    const result = await planService.inspectCadUpload(body, req.headers['content-type'] ?? '');
     sendSuccess(res, result);
+});
+
+export const generatePlanController = catchAsync(async (req: Request, res: Response) => {
+    const result = await planService.generatePlan(req.params.plan_id, req.user!.id, ownerOptions(req));
+    // 202 when the work was queued: the caller has a job id to poll, not a plan.
+    sendSuccess(res, result, undefined, result.job ? 202 : 200);
+});
+
+export const planJobStatusController = catchAsync(async (req: Request, res: Response) => {
+    const job = await planJobs.getJob(req.params.job_id);
+    if (!job || job.user !== req.user!.id) {
+        throw ApiError.notFound('Job not found');
+    }
+    sendSuccess(res, job);
 });
 
 export const convertComputationController = catchAsync(async (req: Request, res: Response) => {

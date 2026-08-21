@@ -1,10 +1,17 @@
 import { CoordinateProps } from '@modules/traverse/traverse.interface';
-import { ElevationProps, LongitudinalProfileParameters, RouteParameters } from './plan.interface';
+import { ElevationProps, LongitudinalProfileParameters, PageSize, RouteParameters } from './plan.interface';
 
 /**
  * Embellishments: text and symbol sizes derived from the size of the drawing
  * itself, so users never guess font/beacon/label sizes and labels stay
  * legible whether the site is 30 m or 3 km across.
+ *
+ * This sizing model applies to sheets the drawing service **fits to the
+ * page** -- route profiles, and any plan with `auto_scale_sizes` turned off.
+ * Map plans (cadastral, topographic, layout) are plotted at their declared
+ * scale and take their text heights from the printed-millimetre table in the
+ * drawing service instead, where a size in mm converts directly to model
+ * units; these values are ignored for those plans.
  */
 
 export interface PlanEmbellishments {
@@ -20,45 +27,56 @@ export interface PlanEmbellishments {
 const FRAME_X_PERCENT = 0.9;
 const FRAME_Y_PERCENT = 1.5;
 
-// Element sizes as a fraction of the square root of the frame area
-const FONT_SIZE_PERCENT = 0.0127;
-
 /**
- * Beacon symbol size.
+ * Printed sizes, in millimetres, that each element should end up at on paper.
  *
- * The drawing is plotted fitted to the sheet, so an element sized as a
- * fraction of sqrt(frame area) prints at a size that is independent of both
- * the parcel extent and the plan scale (1:500, 1:1000 and 1:2500 all render
- * the same). That makes the fraction directly convertible to millimetres on
- * paper: the printable area of an A4 sheet (210 x 297 mm less the renderer's
- * 20 mm margins) has a geometric mean of sqrt(170 * 257) ~= 209 mm, so
+ * A fitted sheet has no fixed scale, so an element is sized as a fraction of
+ * sqrt(frame area); that fraction prints at a size independent of the site
+ * extent. The conversion is
  *
- *     printed size (mm) ~= PERCENT * 209
+ *     printed size (mm) ~= PERCENT * printableGeomean(page)
  *
- * Surveyors expect a beacon to read as a neat point marker of about
- * 1.5-2 mm. The previous 0.0127 printed at ~2.6 mm, which testers reported
- * as too large, so the fraction is now derived from the target instead of
- * being a magic number.
+ * where the printable geometric mean is sqrt(w * h) of the paper less the
+ * renderer's 20 mm margins -- ~209 mm for A4, ~297 mm for A3, and so on.
+ * Working from a target in millimetres rather than a bare fraction means the
+ * numbers can be checked against a ruler on a printout, and it keeps the
+ * printed size right when the user picks a sheet other than A4.
+ *
+ * The values themselves come from the surveyor review rounds: a beacon reads
+ * as a neat point marker at ~1.6 mm (2.6 mm was reported as too large), and a
+ * spot elevation at ~1.5 mm (0.29 mm was "very tiny" and effectively
+ * invisible). The rest are the previous fractions expressed at their A4
+ * printed size, so this change alters nothing on an A4 sheet.
  */
+const PAGE_MARGIN_MM = 20;
 const BEACON_TARGET_MM = 1.6;
-const A4_PRINTABLE_GEOMEAN_MM = Math.sqrt(170 * 257);
-const BEACON_SIZE_PERCENT = BEACON_TARGET_MM / A4_PRINTABLE_GEOMEAN_MM; // ~0.00766
-const LABEL_SIZE_PERCENT = 0.007;
-const FOOTER_SIZE_PERCENT = 0.0088;
+const LABEL_TARGET_MM = 1.46; // was 0.007 * 209
+const FOOTER_TARGET_MM = 1.84; // was 0.0088 * 209
+const FONT_TARGET_MM = 2.65; // was 0.0127 * 209
+const POINT_LABEL_TARGET_MM = 1.5;
+const CONTOUR_LABEL_TARGET_MM = 1.02; // was 0.00488 * 209
+
+/** Paper sizes in mm (width, height), portrait. Mirrors the drawing service. */
+const PAPER_SIZES: Record<string, [number, number]> = {
+    A0: [841, 1189],
+    A1: [594, 841],
+    A2: [420, 594],
+    A3: [297, 420],
+    A4: [210, 297],
+    A5: [148, 210],
+    LETTER: [216, 279],
+    LEGAL: [216, 356],
+};
 
 /**
- * Spot-height elevation label size.
- *
- * Derived from a target printed height the same way as the beacon (see above):
- * printed size (mm) ~= PERCENT * 209. The previous 0.0014 printed at ~0.29 mm,
- * which testers reported as far too small to read ("the spot heights are very
- * tiny"). A surveyor expects a spot elevation to read at roughly 1.5 mm, on par
- * with the coordinate/boundary labels and just under the beacon marker, so the
- * fraction is derived from that target instead of being a magic number.
+ * Geometric mean of the printable area, in mm. Orientation does not change it
+ * -- swapping width and height leaves sqrt(w*h) untouched -- which is exactly
+ * why the geometric mean is the right measure here.
  */
-const POINT_LABEL_TARGET_MM = 1.5;
-const POINT_LABEL_SCALE_PERCENT = POINT_LABEL_TARGET_MM / A4_PRINTABLE_GEOMEAN_MM; // ~0.00718
-const CONTOUR_LABEL_SCALE_PERCENT = 0.00488;
+export const printableGeomeanMm = (pageSize?: PageSize | string): number => {
+    const [w, h] = PAPER_SIZES[String(pageSize ?? 'A4').toUpperCase()] ?? PAPER_SIZES.A4;
+    return Math.sqrt((w - 2 * PAGE_MARGIN_MM) * (h - 2 * PAGE_MARGIN_MM));
+};
 
 // Floor for degenerate inputs (one point, identical points, empty data) so
 // sizes never collapse to zero or blow up to NaN/Infinity.
@@ -68,22 +86,50 @@ const ceil1 = (value: number): number => Math.ceil(value * 10) / 10;
 
 const safe = (value: number | undefined | null): number => (Number.isFinite(value as number) ? (value as number) : 0);
 
+/**
+ * Min and max of a numeric series, in one pass.
+ *
+ * Deliberately not `Math.max(...values)`: spreading an array passes every
+ * element as a function argument, which overflows the call stack somewhere
+ * between 100k and 500k elements. A million-point survey therefore used to
+ * crash the API with a RangeError before the drawing engine was ever reached.
+ */
+const range = (values: number[]): { min: number; max: number } => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const value of values) {
+        if (value < min) min = value;
+        if (value > max) max = value;
+    }
+    return Number.isFinite(min) ? { min, max } : { min: 0, max: 0 };
+};
+
 /** Sizes from the final frame dimensions (in model metres). */
-const sizesFromFrame = (frameWidth: number, frameHeight: number): PlanEmbellishments => {
+const sizesFromFrame = (
+    frameWidth: number,
+    frameHeight: number,
+    pageSize?: PageSize | string,
+): PlanEmbellishments => {
     const areaSqrt = Math.sqrt(Math.max(frameWidth, 1) * Math.max(frameHeight, 1));
+    // Model metres per printed millimetre on this sheet.
+    const perMm = areaSqrt / printableGeomeanMm(pageSize);
 
     return {
-        font_size: ceil1(areaSqrt * FONT_SIZE_PERCENT),
-        beacon_size: ceil1(areaSqrt * BEACON_SIZE_PERCENT),
-        label_size: ceil1(areaSqrt * LABEL_SIZE_PERCENT),
-        footer_size: ceil1(areaSqrt * FOOTER_SIZE_PERCENT),
-        point_label_scale: ceil1(areaSqrt * POINT_LABEL_SCALE_PERCENT),
-        contour_label_scale: ceil1(areaSqrt * CONTOUR_LABEL_SCALE_PERCENT),
+        font_size: ceil1(FONT_TARGET_MM * perMm),
+        beacon_size: ceil1(BEACON_TARGET_MM * perMm),
+        label_size: ceil1(LABEL_TARGET_MM * perMm),
+        footer_size: ceil1(FOOTER_TARGET_MM * perMm),
+        point_label_scale: ceil1(POINT_LABEL_TARGET_MM * perMm),
+        contour_label_scale: ceil1(CONTOUR_LABEL_TARGET_MM * perMm),
     };
 };
 
 /** Core computation from the drawing's width/height in model metres. */
-export const computeEmbellishmentsFromExtent = (width: number, height: number): PlanEmbellishments => {
+export const computeEmbellishmentsFromExtent = (
+    width: number,
+    height: number,
+    pageSize?: PageSize | string,
+): PlanEmbellishments => {
     let w = Math.max(safe(width), 0);
     let h = Math.max(safe(height), 0);
 
@@ -95,25 +141,29 @@ export const computeEmbellishmentsFromExtent = (width: number, height: number): 
     const marginX = Math.max(w, h) * FRAME_X_PERCENT;
     const marginY = Math.max(w, h) * FRAME_Y_PERCENT;
 
-    return sizesFromFrame(w + 2 * marginX, h + 2 * marginY);
+    return sizesFromFrame(w + 2 * marginX, h + 2 * marginY, pageSize);
 };
 
 /** Sizes from a coordinate extent (cadastral, topographic, layout plans). */
-export const computePlanEmbellishments = (coordinates: CoordinateProps[]): PlanEmbellishments => {
+export const computePlanEmbellishments = (
+    coordinates: CoordinateProps[],
+    pageSize?: PageSize | string,
+): PlanEmbellishments => {
     const points = (coordinates ?? []).filter(
         c => Number.isFinite(c?.northing) && Number.isFinite(c?.easting),
     );
 
     if (points.length === 0) {
-        return computeEmbellishmentsFromExtent(MIN_EXTENT, MIN_EXTENT);
+        return computeEmbellishmentsFromExtent(MIN_EXTENT, MIN_EXTENT, pageSize);
     }
 
-    const northings = points.map(c => c.northing);
-    const eastings = points.map(c => c.easting);
+    const northings = range(points.map(c => c.northing));
+    const eastings = range(points.map(c => c.easting));
 
     return computeEmbellishmentsFromExtent(
-        Math.max(...eastings) - Math.min(...eastings),
-        Math.max(...northings) - Math.min(...northings),
+        eastings.max - eastings.min,
+        northings.max - northings.min,
+        pageSize,
     );
 };
 
@@ -122,6 +172,7 @@ export interface RouteEmbellishmentInput {
     coordinates?: CoordinateProps[];
     longitudinal_profile_parameters?: LongitudinalProfileParameters;
     route_parameters?: RouteParameters;
+    page_size?: PageSize;
 }
 
 /**
@@ -141,9 +192,9 @@ export const computeRouteEmbellishments = (plan: RouteEmbellishmentInput): PlanE
     const stationInterval = safe(params.station_interval) || 10;
 
     // Profile grid extents (grid pads the data range by half on each side)
-    const values = elevations.map(e => e.elevation);
+    const values = range(elevations.map(e => e.elevation));
     const elevRange = Math.max(
-        Math.max(...values) - Math.min(...values),
+        values.max - values.min,
         safe(params.elevation_interval) || 1,
     );
     const gridHeight = 2 * elevRange * vScale;
@@ -202,5 +253,5 @@ export const computeRouteEmbellishments = (plan: RouteEmbellishmentInput): PlanE
     // 8% side margins, 26% of width on top, bottom solved for the footer band.
     const marginTop = sheetWidth * 0.26;
     const marginBottom = (0.18 * (sheetHeight + marginTop) + sheetWidth * 0.03) / (1 - 0.18);
-    return sizesFromFrame(sheetWidth * 1.16, sheetHeight + marginTop + marginBottom);
+    return sizesFromFrame(sheetWidth * 1.16, sheetHeight + marginTop + marginBottom, plan.page_size);
 };

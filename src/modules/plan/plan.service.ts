@@ -1,3 +1,5 @@
+import { Readable } from 'stream';
+import { Types } from 'mongoose';
 import env from '@config/env';
 import { RepoOptions } from '@db/types';
 import { ApiError } from '@utils/api-error';
@@ -6,8 +8,15 @@ import { CoordinateProps } from '@modules/traverse/traverse.interface';
 import { backComputation, forwardComputation, traverseComputation } from '@modules/traverse/traverse.service';
 import { differentialLeveling } from '@modules/leveling/leveling.service';
 import projectRepository from '@modules/project/project.repository';
+import Plan from './plan.model';
 import planRepository from './plan.repository';
-import { computePlanEmbellishments, computeRouteEmbellishments, PlanEmbellishments } from './plan.embellishments';
+import planPoints, { PREVIEW_LIMIT } from './plan-points.repository';
+import { CoordinateLimitError, CoordinateParseError, streamCoordinates } from './coordinate-stream';
+import { ColumnMapping } from './coordinate-parser';
+import { PointKind } from './plan.interface';
+import planJobs, { PlanJob } from './plan-job';
+import objectStorage from '@utils/object-storage';
+import { computeEmbellishmentsFromExtent, computePlanEmbellishments, computeRouteEmbellishments, PlanEmbellishments } from './plan.embellishments';
 import {
     BeaconType,
     CreatePlanInput,
@@ -69,8 +78,25 @@ const defaultLayoutParameters = (): LayoutParameters => ({
     numbering: { scheme: 'block_plot', block_labels: 'alphabetic', plot_start: 1 },
 });
 
-const applySizes = (update: Partial<IPlan>, embellishments: PlanEmbellishments | null): void => {
-    if (!embellishments) return;
+/**
+ * Whether this plan's sizes are still driven from the drawing extent.
+ *
+ * Map plans with `auto_scale_sizes` on (the default) are plotted at their
+ * declared scale and take their text heights from the drawing service's
+ * printed-millimetre table, so recomputing these fields would overwrite a
+ * user's manual sizes with numbers nothing reads. Route sheets are fitted to
+ * the page and have no scale to size from, so they always keep the
+ * extent-derived values.
+ */
+const usesExtentSizing = (plan: IPlan): boolean =>
+    plan.type === PlanType.ROUTE || plan.auto_scale_sizes === false;
+
+const applySizes = (
+    plan: IPlan,
+    update: Partial<IPlan>,
+    embellishments: PlanEmbellishments | null,
+): void => {
+    if (!embellishments || !usesExtentSizing(plan)) return;
     update.font_size = embellishments.font_size;
     update.beacon_size = embellishments.beacon_size;
     update.label_size = embellishments.label_size;
@@ -188,16 +214,43 @@ export const editCoordinates = async (
         }),
     );
 
+    // The browser only ever holds a preview of a large survey, so a save that
+    // carries fewer points than are stored would silently destroy the rest.
+    // Editing a preview is refused rather than accepted and truncated.
+    const storedCount = await planPoints.countPoints(id, 'coordinates');
+    if (storedCount > PREVIEW_LIMIT && coordinates.length <= PREVIEW_LIMIT) {
+        throw ApiError.badRequest(
+            `This plan holds ${storedCount.toLocaleString()} survey points and the ` +
+            `coordinate table shows only the first ${PREVIEW_LIMIT}. Saving them would ` +
+            `discard the rest — upload a replacement file instead.`,
+        );
+    }
+
+    if (coordinates.length > env.MAX_SURVEY_POINTS) {
+        throw new ApiError(
+            413,
+            `This plan carries ${coordinates.length.toLocaleString()} coordinates, over the ` +
+            `${env.MAX_SURVEY_POINTS.toLocaleString()} maximum this service accepts.`,
+        );
+    }
+
     const updatedCoordinates = dedupeById(coordinates);
     const update: Partial<IPlan> = { coordinates: updatedCoordinates };
+    let recordSizeAfterWrite = false;
+
+    // A hand-edited set replaces the stored series outright.
+    await planPoints.replacePoints(id, 'coordinates', updatedCoordinates);
+    update.point_count = updatedCoordinates.length;
+    recordSizeAfterWrite = true;
 
     if (plan.type === PlanType.ROUTE) {
         // Route sheets are sized by their drawn views, not a boundary
-        applySizes(update, computeRouteEmbellishments({
+        applySizes(plan, update, computeRouteEmbellishments({
             elevations: plan.elevations,
             coordinates: updatedCoordinates,
             longitudinal_profile_parameters: plan.longitudinal_profile_parameters,
             route_parameters: plan.route_parameters,
+            page_size: plan.page_size,
         }));
         return requirePlan(await planRepository.editPlan(id, update, options));
     }
@@ -209,9 +262,9 @@ export const editCoordinates = async (
         embellishmentCoordinates.push(...plan.topographic_boundary.coordinates);
     }
 
-    if (embellishmentCoordinates.length > 0) {
-        const embellishments = computePlanEmbellishments(embellishmentCoordinates);
-        applySizes(update, embellishments);
+    if (embellishmentCoordinates.length > 0 && usesExtentSizing(plan)) {
+        const embellishments = computePlanEmbellishments(embellishmentCoordinates, plan.page_size);
+        applySizes(plan, update, embellishments);
 
         if (plan.type === PlanType.TOPOGRAPHIC && plan.topographic_setting) {
             plan.topographic_setting.point_label_scale = embellishments.point_label_scale;
@@ -220,7 +273,9 @@ export const editCoordinates = async (
         }
     }
 
-    return requirePlan(await planRepository.editPlan(id, update, options));
+    const saved = requirePlan(await planRepository.editPlan(id, update, options));
+    if (recordSizeAfterWrite) await recordPlanSize(id);
+    return saved;
 };
 
 export const editElevations = async (
@@ -238,11 +293,12 @@ export const editElevations = async (
 
     const updatedElevations = dedupeById(elevations);
     const update: Partial<IPlan> = { elevations: updatedElevations };
-    applySizes(update, computeRouteEmbellishments({
+    applySizes(plan, update, computeRouteEmbellishments({
         elevations: updatedElevations,
         coordinates: plan.coordinates,
         longitudinal_profile_parameters: plan.longitudinal_profile_parameters,
         route_parameters: plan.route_parameters,
+        page_size: plan.page_size,
     }));
 
     return requirePlan(await planRepository.editPlan(id, update, options));
@@ -307,20 +363,20 @@ export const editTopoBoundary = async (
         coords.push(coords[0]);
     }
 
-    const embellishments = computePlanEmbellishments([...coords, ...(plan.coordinates || [])]);
+    const update: Partial<IPlan> = { topographic_boundary: boundary };
 
-    const update: Partial<IPlan> = {
-        topographic_boundary: boundary,
-        font_size: embellishments.font_size,
-        beacon_size: embellishments.beacon_size,
-        label_size: embellishments.label_size,
-        footer_size: embellishments.footer_size,
-    };
+    if (usesExtentSizing(plan)) {
+        const embellishments = computePlanEmbellishments(
+            [...coords, ...(plan.coordinates || [])],
+            plan.page_size,
+        );
+        applySizes(plan, update, embellishments);
 
-    if (plan.topographic_setting) {
-        plan.topographic_setting.point_label_scale = embellishments.point_label_scale;
-        plan.topographic_setting.contour_label_scale = embellishments.contour_label_scale;
-        update.topographic_setting = plan.topographic_setting;
+        if (plan.topographic_setting) {
+            plan.topographic_setting.point_label_scale = embellishments.point_label_scale;
+            plan.topographic_setting.contour_label_scale = embellishments.contour_label_scale;
+            update.topographic_setting = plan.topographic_setting;
+        }
     }
 
     return requirePlan(await planRepository.editPlan(id, update, options));
@@ -353,11 +409,12 @@ export const editLongitudinalProfileParameters = async (
     requireType(plan, PlanType.ROUTE, 'route');
 
     const update: Partial<IPlan> = { longitudinal_profile_parameters: params };
-    applySizes(update, computeRouteEmbellishments({
+    applySizes(plan, update, computeRouteEmbellishments({
         elevations: plan.elevations,
         coordinates: plan.coordinates,
         longitudinal_profile_parameters: params,
         route_parameters: plan.route_parameters,
+        page_size: plan.page_size,
     }));
 
     return requirePlan(await planRepository.editPlan(id, update, options));
@@ -377,11 +434,12 @@ export const editRouteParameters = async (
     requireType(plan, PlanType.ROUTE, 'route');
 
     const update: Partial<IPlan> = { route_parameters: params };
-    applySizes(update, computeRouteEmbellishments({
+    applySizes(plan, update, computeRouteEmbellishments({
         elevations: plan.elevations,
         coordinates: plan.coordinates,
         longitudinal_profile_parameters: plan.longitudinal_profile_parameters,
         route_parameters: params,
+        page_size: plan.page_size,
     }));
 
     return requirePlan(await planRepository.editPlan(id, update, options));
@@ -511,13 +569,420 @@ export const editLayoutData = async (id: string, data: LayoutDataInput, options?
 // Plan generation (delegates drawing to the Python service)
 // ---------------------------------------------------------------------------
 
-export const generatePlan = async (id: string, options?: RepoOptions): Promise<{ url: string }> => {
-    const plan = requirePlan(await planRepository.getPlanById(id, options));
+/**
+ * Legacy CAD import (Task 11): forward an uploaded DWG/DXF to the drawing
+ * engine and return what it found.
+ *
+ * The body is passed through untouched -- the engine parses the multipart, so
+ * the API never has to hold a CAD file in memory as fields or add a multipart
+ * dependency. Its job here is the boundary it owns: authentication and the
+ * size limit.
+ */
+/**
+ * Measure and record what a plan occupies (Task 12).
+ *
+ * Both halves are measured server-side with `$bsonSize`, so this costs one
+ * aggregate per collection rather than pulling documents back to weigh them.
+ * Called whenever the point series changes.
+ */
+export const recordPlanSize = async (id: string): Promise<IPlan['size']> => {
+    const [docResult] = await Plan.aggregate<{ bytes: number }>([
+        { $match: { _id: new Types.ObjectId(id) } },
+        { $project: { bytes: { $bsonSize: '$$ROOT' } } },
+    ]);
 
+    const documentBytes = docResult?.bytes ?? 0;
+    const pointsBytes = await planPoints.storageBytes(id);
+
+    const size = {
+        document_bytes: documentBytes,
+        points_bytes: pointsBytes,
+        total_bytes: documentBytes + pointsBytes,
+        measured_at: new Date(),
+    };
+
+    await planRepository.editPlan(id, { size });
+    return size;
+};
+
+/**
+ * Ingest an uploaded coordinate file (Task 12).
+ *
+ * The file is parsed as it streams in and written to the bucketed point store
+ * in batches, so a million-row survey costs the same memory as a hundred-row
+ * one. Nothing about this path holds the whole dataset — not the browser,
+ * which no longer parses at all, and not this process.
+ *
+ * The plan document keeps only a preview and a summary. Coordinates used to
+ * live in the document itself, which put a hard ceiling of roughly 200,000
+ * points on a survey before MongoDB refused the write.
+ */
+export const uploadCoordinates = async (
+    id: string,
+    file: Readable,
+    meta: {
+        fileName?: string;
+        kind?: PointKind;
+        mapping?: ColumnMapping;
+        maxRows?: number;
+        /** Declared upload size, when the client sent one. */
+        declaredBytes?: number;
+    },
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    // Refuse an oversized upload before reading a byte of it. The stream
+    // enforces the same ceiling for clients that send no Content-Length, but
+    // catching it here costs the user seconds rather than minutes.
+    if (meta.declaredBytes && meta.declaredBytes > env.MAX_UPLOAD_BYTES) {
+        throw new ApiError(
+            413,
+            `This file is ${Math.round(meta.declaredBytes / (1024 * 1024))} MB, over the ` +
+            `${Math.round(env.MAX_UPLOAD_BYTES / (1024 * 1024))} MB upload limit. ` +
+            `Split the survey, or reduce its density, and upload again.`,
+        );
+    }
+
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, page_size: 1, auto_scale_sizes: 1 },
+        }),
+    );
+
+    const kind: PointKind = meta.kind ?? 'coordinates';
+
+    // Replace, not append: an upload is a new dataset for this plan.
+    await planPoints.clearPoints(id, kind);
+
+    let seq = 0;
+    let preview: CoordinateProps[] = [];
+
+    let result;
+    try {
+        result = await streamCoordinates(
+            file,
+            async batch => {
+                seq = await planPoints.appendPoints(id, kind, batch, seq);
+                if (preview.length < PREVIEW_LIMIT) {
+                    preview = preview.concat(batch).slice(0, PREVIEW_LIMIT);
+                }
+            },
+            {
+                mapping: meta.mapping,
+                // A caller may ask for something smaller, never larger.
+                maxRows: Math.min(meta.maxRows || env.MAX_SURVEY_POINTS, env.MAX_SURVEY_POINTS),
+                maxBytes: env.MAX_UPLOAD_BYTES,
+            },
+        );
+    } catch (error) {
+        // Whatever was written before the limit was hit is not a survey.
+        await planPoints.clearPoints(id, kind);
+
+        // These carry messages written for the person who uploaded the file, so
+        // they must reach them rather than becoming a generic 500.
+        if (error instanceof CoordinateLimitError) throw new ApiError(413, error.message);
+        if (error instanceof CoordinateParseError) throw ApiError.badRequest(error.message);
+        throw error;
+    }
+
+    const summary = await planPoints.summarise(id, kind);
+
+    const update: Partial<IPlan> = {
+        point_count: summary.count,
+        point_summary: summary,
+        point_source: {
+            file_name: meta.fileName,
+            row_count: result.rows,
+            skipped_rows: result.skipped,
+            uploaded_at: new Date(),
+        },
+    };
+
+    if (kind === 'coordinates') {
+        // The document carries a preview only; the full series lives in the
+        // point store and is streamed to the drawing engine on generation.
+        update.coordinates = preview;
+    }
+
+    // Sizes still derive from the drawing extent for the plan types that use
+    // them, and the summary already has the extent -- computed in the database
+    // rather than by pulling every point back out.
+    if (usesExtentSizing(plan) && summary.count > 0) {
+        applySizes(plan, update, computeEmbellishmentsFromExtent(
+            (summary.max_easting ?? 0) - (summary.min_easting ?? 0),
+            (summary.max_northing ?? 0) - (summary.min_northing ?? 0),
+            plan.page_size,
+        ));
+    }
+
+    await planRepository.editPlan(id, update, options);
+    // Measured after the write so the recorded size includes this upload.
+    update.size = await recordPlanSize(id);
+    return requirePlan(await planRepository.getPlanById(id, options));
+};
+
+/**
+ * Run one queued generation job (Task 12).
+ *
+ * Called by the worker, never in a request. Progress is written to the job
+ * record at each step; the drawing engine writes to the same record while it
+ * reads and draws, which is why the job id goes with the payload.
+ */
+export const runPlanJob = async (jobId: string): Promise<void> => {
+    const job = await planJobs.getJob(jobId);
+    if (!job) {
+        logger.warn(`job ${jobId} vanished before it could run`);
+        return;
+    }
+
+    let artifact: { publicId: string; folder: string } | undefined;
+
+    try {
+        await planJobs.updateJob(jobId, { status: 'running', stage: 'preparing', percent: 1 });
+
+        const plan = requirePlan(
+            await planRepository.getPlanById(job.plan, { filter: { user: job.user } }),
+        );
+        await preparePlanForDrawing(job.plan, plan);
+
+        // Export the points, reporting as they go. This is the slow half for a
+        // large survey, and the half whose progress is worth showing.
+        await planJobs.updateJob(jobId, { stage: 'exporting points', percent: 2 });
+        const exported = await exportPointsToStorage(job.plan, plan, async (written, total) => {
+            // Export occupies the first 40% of the bar; drawing is the rest.
+            const percent = total > 0 ? 2 + Math.round((written / total) * 38) : 2;
+            await planJobs.updateJob(jobId, {
+                stage: 'exporting points', processed: written, total, percent,
+            });
+        });
+        artifact = { publicId: exported.publicId, folder: exported.folder };
+
+        // Named for what this service is doing; the engine overwrites the stage
+        // with its own steps the moment it starts reading.
+        await planJobs.updateJob(jobId, { stage: 'sending to the drawing engine', percent: 40 });
+
+        // The engine fetches the export itself and reports its own progress
+        // against this job id.
+        const response = await fetch(`${env.PYTHON_SERVER}/${plan.type}/plan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ points_url: exported.url, job_id: jobId }),
+        });
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '');
+            logger.error(`job ${jobId} failed at the engine (${response.status}): ${body}`);
+            let message = 'The drawing engine could not generate this plan';
+            try {
+                message = (JSON.parse(body) as { error?: string }).error ?? message;
+            } catch {
+                /* keep the generic message */
+            }
+            throw new Error(message);
+        }
+
+        const { url } = (await response.json()) as { url: string };
+        await planJobs.completeJob(jobId, url);
+        logger.info(`job ${jobId} complete`);
+    } catch (error) {
+        await planJobs.failJob(jobId, (error as Error).message);
+        logger.error(`job ${jobId} failed: ${(error as Error).message}`);
+    } finally {
+        // The export has served its purpose either way.
+        if (artifact) await objectStorage.remove(artifact.folder, artifact.publicId);
+    }
+};
+
+export const inspectCadUpload = async (body: Buffer, contentType: string): Promise<unknown> => {
+    if (!contentType) {
+        throw ApiError.badRequest('A file upload is required');
+    }
+
+    const response = await fetch(`${env.PYTHON_SERVER}/cad/inspect`, {
+        method: 'POST',
+        headers: { 'Content-Type': contentType },
+        body: new Uint8Array(body),
+    });
+
+    const text = await response.text();
+    let parsed: Record<string, unknown>;
+    try {
+        parsed = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+        logger.error(`CAD inspection failed (${response.status}): ${text}`);
+        throw ApiError.badRequest('The drawing could not be read');
+    }
+
+    if (!response.ok) {
+        // The engine's messages name the actual problem with the drawing, so
+        // pass them through rather than replacing them with a generic one.
+        throw ApiError.badRequest(String(parsed.error ?? 'The drawing could not be read'));
+    }
+
+    return parsed;
+};
+
+/** NDJSON keys. Short on purpose: across a million points the difference
+ *  between `northing` and `n` is roughly 20 MB on the wire. */
+const WIRE = { kind: 'k', id: 'i', northing: 'n', easting: 'e', elevation: 'z' } as const;
+
+const pointLine = (point: CoordinateProps, kind: 'c' | 'b'): string =>
+    `${JSON.stringify({
+        [WIRE.kind]: kind,
+        [WIRE.id]: point.id,
+        [WIRE.northing]: point.northing,
+        [WIRE.easting]: point.easting,
+        [WIRE.elevation]: point.elevation ?? 0,
+    })}\n`;
+
+/**
+ * Write a plan and its points to object storage as NDJSON.
+ *
+ * Used by background jobs: handing the engine a URL rather than a request body
+ * means the payload outlives the worker that produced it, so a job can be
+ * retried after a restart without pulling a million points back out of
+ * MongoDB. The stream is piped straight into the upload, so the export never
+ * exists in memory either.
+ */
+export const exportPointsToStorage = async (
+    planId: string,
+    plan: IPlan,
+    onProgress?: (written: number, total: number) => Promise<void>,
+): Promise<{ url: string; publicId: string; folder: string }> => {
+    const folder = 'plan_points';
+    const publicId = `${planId}-${Date.now()}`;
+
+    const storedCount = await planPoints.countPoints(planId, 'coordinates');
+    const boundaryCount = await planPoints.countPoints(planId, 'boundary');
+    const total = storedCount + boundaryCount;
+
+    const header = buildEngineHeader(plan, storedCount, boundaryCount);
+
+    let written = 0;
+    const body = Readable.from((async function* () {
+        yield `${JSON.stringify(header)}\n`;
+
+        for (const [kind, wire] of [['coordinates', 'c'], ['boundary', 'b']] as const) {
+            if (kind === 'coordinates' ? !storedCount : !boundaryCount) continue;
+            for await (const batch of planPoints.streamPoints(planId, kind)) {
+                let chunk = '';
+                for (const point of batch) chunk += pointLine(point, wire);
+                written += batch.length;
+                if (onProgress) await onProgress(written, total);
+                yield chunk;
+            }
+        }
+    })());
+
+    const url = await objectStorage.uploadStream(body, { folder, publicId });
+    return { url, publicId, folder };
+};
+
+/** The plan payload minus the bulk series, which travel separately. */
+const buildEngineHeader = (
+    plan: IPlan,
+    storedCount: number,
+    boundaryCount: number,
+): Record<string, unknown> => {
+    const header: Record<string, unknown> = { ...(plan as unknown as Record<string, unknown>) };
+    if (storedCount) header.coordinates = [];
+    if (boundaryCount) {
+        const key = plan.type === PlanType.LAYOUT ? 'layout_boundary' : 'topographic_boundary';
+        const boundary = header[key] as Record<string, unknown> | undefined;
+        if (boundary) header[key] = { ...boundary, coordinates: [] };
+    }
+    return header;
+};
+
+/**
+ * Send a plan to the drawing engine (Task 12).
+ *
+ * A plan whose points live in the point store is streamed as NDJSON: the plan
+ * on the first line, then one point per line. `JSON.stringify` on a
+ * million-point plan builds about 85 MB of string in memory before a byte is
+ * sent, and the engine then parses all of it back — so neither side ever
+ * materialises the survey now. The engine thins points to the plotting scale
+ * as it reads them.
+ *
+ * Plans without a stored point series keep the plain JSON body they always
+ * used, so nothing about the small-plan path changes.
+ */
+const sendPlanToEngine = async (planId: string, plan: IPlan): Promise<Response> => {
+    const url = `${env.PYTHON_SERVER}/${plan.type}/plan`;
+
+    const storedCount = await planPoints.countPoints(planId, 'coordinates');
+    const boundaryCount = await planPoints.countPoints(planId, 'boundary');
+
+    if (!storedCount && !boundaryCount) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(plan),
+        });
+    }
+
+    // The header carries everything except the bulk series, which follow it.
+    const header = buildEngineHeader(plan, storedCount, boundaryCount);
+
+    const body = new ReadableStream<Uint8Array>({
+        async start(controller) {
+            const encoder = new TextEncoder();
+            try {
+                controller.enqueue(encoder.encode(`${JSON.stringify(header)}\n`));
+
+                for (const [kind, wire] of [['coordinates', 'c'], ['boundary', 'b']] as const) {
+                    if (kind === 'coordinates' ? !storedCount : !boundaryCount) continue;
+                    for await (const batch of planPoints.streamPoints(planId, kind)) {
+                        let chunk = '';
+                        for (const point of batch) chunk += pointLine(point, wire);
+                        controller.enqueue(encoder.encode(chunk));
+                    }
+                }
+                controller.close();
+            } catch (err) {
+                controller.error(err);
+            }
+        },
+    });
+
+    logger.info(`streaming ${storedCount} points and ${boundaryCount} boundary points to the engine`);
+
+    return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-ndjson' },
+        body,
+        // Required by undici when the body is a stream.
+        duplex: 'half',
+    } as RequestInit & { duplex: 'half' });
+};
+
+/**
+ * The plan's full coordinate register.
+ *
+ * `plan.coordinates` holds only a preview once a survey is in the point store,
+ * so anything that resolves beacon ids -- parcel legs, areas -- has to read the
+ * stored series instead. Using the preview would quietly compute a parcel from
+ * whichever corners happened to fall in the first 200 points, and put a wrong
+ * area on a legal document.
+ */
+const fullCoordinates = async (id: string, plan: IPlan): Promise<CoordinateProps[]> => {
+    const embedded = plan.coordinates ?? [];
+    const stored = await planPoints.countPoints(id, 'coordinates');
+    if (!stored || stored <= embedded.length) return embedded;
+    return planPoints.readAllPoints(id, 'coordinates');
+};
+
+/**
+ * Prepare a plan for drawing: recompute the legs and areas that are derived
+ * from its geometry. Shared by the inline and background paths so a plan is
+ * generated identically either way.
+ */
+const preparePlanForDrawing = async (id: string, plan: IPlan): Promise<void> => {
     // Compute parcel legs and areas from the plan coordinates
     if (plan.type === PlanType.CADASTRAL && plan.parcels) {
+        const register = await fullCoordinates(id, plan);
         const coordinateMap: Record<string, CoordinateProps> = {};
-        for (const coord of plan.coordinates ?? []) {
+        for (const coord of register) {
             coordinateMap[coord.id] = coord;
         }
 
@@ -546,11 +1011,52 @@ export const generatePlan = async (id: string, options?: RepoOptions): Promise<{
         plan.layout_boundary.area = result.traverse.area;
     }
 
-    const response = await fetch(`${env.PYTHON_SERVER}/${plan.type}/plan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(plan),
-    });
+};
+
+/**
+ * Should this plan be drawn in the background?
+ *
+ * Sized by point count rather than by wall-clock guesswork: the point count is
+ * known before any work starts, and it is what actually drives the cost --
+ * exporting the points, shipping them, triangulating and contouring all scale
+ * with it.
+ */
+export const shouldRunAsync = (plan: IPlan): boolean =>
+    (plan.point_count ?? 0) >= env.ASYNC_POINT_THRESHOLD;
+
+export interface GenerateResult {
+    url?: string;
+    job?: PlanJob;
+}
+
+/**
+ * Generate a plan, inline or as a background job depending on its size.
+ *
+ * A small plan is drawn in the request as it always was. A large one returns a
+ * job id immediately: the work can run for minutes, and a request held open
+ * that long tells the user nothing and eventually meets a proxy timeout.
+ */
+export const generatePlan = async (
+    id: string,
+    userId: string,
+    options?: RepoOptions,
+): Promise<GenerateResult> => {
+    const plan = requirePlan(await planRepository.getPlanById(id, options));
+
+    if (shouldRunAsync(plan)) {
+        if (!objectStorage.isStorageConfigured()) {
+            throw ApiError.badRequest(
+                'This survey is too large to generate in a single request, and ' +
+                'background generation is not configured on this server.',
+            );
+        }
+        const job = await planJobs.createJob(id, userId, plan.point_count ?? 0);
+        logger.info(`queued plan ${id} as job ${job.id} (${plan.point_count} points)`);
+        return { job };
+    }
+
+    await preparePlanForDrawing(id, plan);
+    const response = await sendPlanToEngine(id, plan);
 
     if (!response.ok) {
         const body = await response.text().catch(() => '');
