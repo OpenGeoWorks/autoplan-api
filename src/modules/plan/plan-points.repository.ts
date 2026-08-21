@@ -48,6 +48,10 @@ export const replacePoints = async (
     }
 };
 
+/** Buckets a batch of this many points occupies. Lets a caller allocate the
+ *  next ``seq`` without waiting for the write to finish. */
+export const bucketsFor = (points: number): number => Math.ceil(points / BUCKET_SIZE);
+
 /** Append a batch while streaming an upload, continuing from ``startSeq``. */
 export const appendPoints = async (
     planId: string | Types.ObjectId,
@@ -65,7 +69,10 @@ export const appendPoints = async (
         buckets.push({ plan, kind, seq, count: slice.length, points: slice });
         seq += 1;
     }
-    await PlanPointBucket.insertMany(buckets, { ordered: true });
+    // Unordered: every bucket carries its own ``seq``, so the order they land
+    // in is irrelevant, and ordered inserts make the server apply them one at
+    // a time for no benefit.
+    await PlanPointBucket.insertMany(buckets, { ordered: false });
     return seq;
 };
 
@@ -190,6 +197,7 @@ export const summarise = async (
 };
 
 export default {
+    bucketsFor,
     storageBytes,
     replacePoints,
     appendPoints,

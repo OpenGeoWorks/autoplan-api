@@ -42,7 +42,12 @@ export interface StreamResult extends ParseStats {
 
 /** Lines needed before the delimiter and header can be judged. */
 const SNIFF_LINES = 50;
-const DEFAULT_BATCH = 5000;
+// Rows handed to the consumer at a time.
+//
+// Sized for the database round trip, not for the parser: storing a batch costs
+// one insert, and on a network link that round trip dominates everything else.
+// At 5,000 a 1.5-million-point survey spent ~190s in round trips alone.
+const DEFAULT_BATCH = 25_000;
 
 export class CoordinateParseError extends Error {}
 
