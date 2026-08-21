@@ -130,19 +130,27 @@ export const createPlan = async (data: CreatePlanInput, options?: RepoOptions): 
         state: project.location?.state,
         surveyor_name: project.surveyor?.name,
         font: 'Arial',
-        font_size: 12,
+        // The four size controls are printed millimetres on the sheet, and
+        // each governs one group of elements: font_size the title block,
+        // label_size the map annotation, footer_size the footer text,
+        // beacon_size the symbols. These are the drawing engine's designed
+        // sizes, so a plan nobody has restyled is drawn as designed.
+        //
+        // They were ground metres before Task 8 (and font_size was 12, which
+        // now reads as a 12 mm title). Route sheets are fitted to the page
+        // rather than plotted at a scale, so computePlanEmbellishments still
+        // overwrites these for them once coordinates arrive.
+        font_size: 5,
         origin: PlanOrigin.UTM_ZONE_31,
         scale: 1000,
         beacon_type: BeaconType.BOX,
-        // Placeholder until coordinates arrive and computePlanEmbellishments
-        // derives the real size from the drawing extent.
-        beacon_size: 0.18,
-        label_size: 0.2,
+        beacon_size: 1.6,
+        label_size: 2.5,
         page_size: PageSize.A4,
         page_orientation: PageOrientation.PORTRAIT,
         title: 'Untitled Plan',
         footers: [],
-        footer_size: 0.5,
+        footer_size: 2.5,
         computation_only: data.computation_only,
     };
 

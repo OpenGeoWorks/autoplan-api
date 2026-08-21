@@ -61,11 +61,15 @@ const run = async () => {
         );
         check((withElev.elevations?.length ?? 0) === 15, 'stations: elevations saved');
 
-        // embellishments: sizes derive from the drawn sheet, not a boundary
+        // embellishments: sizes derive from the drawn sheet, not a boundary.
+        // Compared against the size the plan was created with rather than a
+        // literal, so the check still means "recomputed" if that default moves.
+        const created = plan.font_size;
         const sized = await planService.fetchPlan(planId);
         check(
-            Number.isFinite(sized.font_size) && (sized.font_size ?? 0) > 0 && sized.font_size !== 12,
-            `embellishments: font sized from route sheet (${sized.font_size})`,
+            Number.isFinite(sized.font_size) && (sized.font_size ?? 0) > 0
+                && sized.font_size !== created,
+            `embellishments: font sized from route sheet (${created} -> ${sized.font_size})`,
         );
         check(
             Number.isFinite(sized.label_size) && (sized.label_size ?? 0) > 0.2,
@@ -74,8 +78,8 @@ const run = async () => {
 
         // changing the vertical scale changes the sheet size -> sizes change
         const rescaled = await planService.editLongitudinalProfileParameters(planId, {
-            horizontal_scale: 1, vertical_scale: 25, profile_origin: [0, 0],
-            station_interval: 20, elevation_interval: 1, starting_chainage: 0,
+            horizontal_scale: 1, vertical_scale: 25,
+            station_interval: 20, elevation_interval: 1,
         });
         check(
             (rescaled.font_size ?? 0) !== (sized.font_size ?? 0),
