@@ -1,11 +1,6 @@
 import { Readable } from 'stream';
-import {
-    S3Client,
-    DeleteObjectCommand,
-    GetObjectCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import env from '@config/env';
 import logger from '@utils/logger';
 
@@ -21,8 +16,16 @@ import logger from '@utils/logger';
  * service works: point S3_ENDPOINT at it, or leave it unset for AWS proper.
  */
 
-/** How long an engine has to fetch an export before the link stops working. */
-const SIGNED_URL_TTL_SECONDS = 6 * 60 * 60;
+/**
+ * Objects are readable without a signature.
+ *
+ * The engine fetches point exports by URL and the plan artefacts it writes are
+ * what a finished plan is shared with, so both are served as plain links. The
+ * bucket has to permit anonymous GET for that to work -- a private bucket
+ * returns 403 on the link rather than failing at upload time, which is worth
+ * knowing when a plan will not download.
+ */
+const DEFAULT_ACL = 'public-read';
 
 let client: S3Client | null = null;
 
@@ -63,15 +66,25 @@ const keyFor = (folder: string, publicId: string): string =>
     (folder ? `${folder.replace(/^\/+|\/+$/g, '')}/${publicId}` : publicId);
 
 /**
+ * Permanent URL for an object.
+ *
+ * Path style -- endpoint/bucket/key -- because a custom endpoint's bucket name
+ * cannot be assumed to resolve as a subdomain. Matches what the drawing engine
+ * builds for the artefacts it uploads.
+ */
+export const publicUrl = (key: string): string => {
+    if (!env.S3.endpoint) {
+        return `https://${env.S3.bucket}.s3.${env.S3.region}.amazonaws.com/${key}`;
+    }
+    return `${env.S3.endpoint.replace(/\/+$/, '')}/${env.S3.bucket}/${key}`;
+};
+
+/**
  * Upload a stream and return a URL the engine can fetch.
  *
  * `Upload` rather than PutObject: it drives a multipart upload from a stream,
  * so a survey of any size goes up without its length being known in advance
  * and without being buffered to find out.
- *
- * The URL is signed rather than public. A point export is survey data, and it
- * only has to outlive the job that made it, so a link that expires is both
- * safer and closer to what it is for.
  */
 export const uploadStream = async (
     body: Readable,
@@ -87,6 +100,7 @@ export const uploadStream = async (
             Key: key,
             Body: body,
             ContentType: 'application/x-ndjson',
+            ACL: DEFAULT_ACL,
         },
         // 5 MB is the smallest part S3 allows; four at a time keeps the upload
         // moving without holding much of the survey in memory.
@@ -95,12 +109,7 @@ export const uploadStream = async (
     });
 
     await upload.done();
-
-    return getSignedUrl(
-        getClient(),
-        new GetObjectCommand({ Bucket: env.S3.bucket, Key: key }),
-        { expiresIn: SIGNED_URL_TTL_SECONDS },
-    );
+    return publicUrl(key);
 };
 
 /** Best-effort cleanup; a leftover export is not worth failing a job over. */
@@ -116,4 +125,4 @@ export const remove = async (folder: string, publicId: string): Promise<void> =>
     }
 };
 
-export default { uploadStream, remove, isStorageConfigured };
+export default { uploadStream, remove, isStorageConfigured, publicUrl };
