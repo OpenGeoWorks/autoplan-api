@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb';
 import projectRepository from '@modules/project/project.repository';
 import Project from '@modules/project/project.model';
 import Plan from '@modules/plan/plan.model';
+import planPoints from '@modules/plan/plan-points.repository';
 import * as planService from '@modules/plan/plan.service';
 import { PlanType } from '@modules/plan/plan.interface';
 import { ProjectStatus } from '@modules/project/project.interface';
@@ -98,6 +99,7 @@ const run = async () => {
             `embellishments: single-point plan gets sane sizes (${degenerate.font_size})`,
         );
         await Plan.deleteOne({ _id: new ObjectId(cadDegenerate.id) });
+        await planPoints.clearPoints(cadDegenerate.id);
 
         const fetched = await planService.fetchPlan(planId);
         check(fetched.coordinates?.length === 15 && !!fetched.route_parameters, 'fetch: stations + route params present');
@@ -111,8 +113,15 @@ const run = async () => {
         catch (e) { rejected = (e as Error).message.includes('route'); }
         check(rejected, 'edit: non-route plan rejected');
         await Plan.deleteOne({ _id: new ObjectId(cad.id) });
+        await planPoints.clearPoints(cad.id);
     } finally {
-        if (planId) await Plan.deleteOne({ _id: new ObjectId(planId) });
+        // Deleting the document does not remove the survey: it lives in
+        // its own collection, so a test that skips this leaves buckets
+        // behind that nothing references and nothing will ever clean up.
+        if (planId) {
+            await Plan.deleteOne({ _id: new ObjectId(planId) });
+            await planPoints.clearPoints(planId);
+        }
         if (projectId) await Project.deleteOne({ _id: new ObjectId(projectId) });
         await disconnectDb();
     }

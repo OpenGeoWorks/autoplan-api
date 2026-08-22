@@ -9,6 +9,7 @@ import { ObjectId } from 'mongodb';
 import projectRepository from '@modules/project/project.repository';
 import Project from '@modules/project/project.model';
 import Plan from '@modules/plan/plan.model';
+import planPoints from '@modules/plan/plan-points.repository';
 import * as planService from '@modules/plan/plan.service';
 import { PlanType } from '@modules/plan/plan.interface';
 import { ProjectStatus } from '@modules/project/project.interface';
@@ -93,12 +94,18 @@ const run = async () => {
         catch (e) { typeRejected = (e as Error).message.includes('layout'); }
         check(typeRejected, 'boundary: non-layout plan rejected');
         await Plan.deleteOne({ _id: new ObjectId(cad.id) });
+        await planPoints.clearPoints(cad.id);
 
         // 7. full fetch returns layout fields
         const fetched = await planService.fetchPlan(planId);
         check(!!fetched.layout_boundary && !!fetched.plots && !!fetched.roads, 'fetch: layout fields present');
     } finally {
-        if (planId) await Plan.deleteOne({ _id: new ObjectId(planId) });
+        // The survey lives outside the document; removing one does not
+        // remove the other.
+        if (planId) {
+            await Plan.deleteOne({ _id: new ObjectId(planId) });
+            await planPoints.clearPoints(planId);
+        }
         if (projectId) await Project.deleteOne({ _id: new ObjectId(projectId) });
         await disconnectDb();
     }

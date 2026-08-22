@@ -187,6 +187,10 @@ export const editPlan = async (id: string, data: EditPlanInput, options?: RepoOp
 };
 
 export const deletePlan = async (id: string, options?: RepoOptions): Promise<void> => {
+    // Deliberately leaves the point store alone. This is a soft delete -- the
+    // document is flagged, not removed -- so the survey has to survive it or
+    // a restored plan would come back empty. Points are only ever removed
+    // when a plan is genuinely gone.
     requirePlan(await planRepository.deletePlan(id, options));
 };
 
