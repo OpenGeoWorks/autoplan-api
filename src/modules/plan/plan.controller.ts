@@ -288,6 +288,17 @@ export const previewCoordinatesController = catchAsync(async (req: Request, res:
  *
  * Takes column indices, not coordinates: the file is re-read on this side.
  */
+/** Discard an uploaded survey so the plan goes back to a table. */
+export const clearUploadedCoordinatesController = catchAsync(
+    async (req: Request, res: Response) => {
+        const kind = (req.query.kind as string) === 'boundary' ? 'boundary' : 'coordinates';
+        const plan = await planService.clearUploadedCoordinates(
+            req.params.plan_id, kind, ownerOptions(req),
+        );
+        sendSuccess(res, plan);
+    },
+);
+
 export const remapCoordinatesController = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as { mapping?: Record<string, number | null>; kind?: string };
     if (!body?.mapping || typeof body.mapping !== 'object') {

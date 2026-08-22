@@ -231,6 +231,52 @@ export const isUploaded = (
     // Records written before point_source carried a kind were all coordinates.
     && (plan.point_source?.kind ?? 'coordinates') === kind;
 
+/**
+ * Discard an uploaded survey, returning the plan to a table the user types in.
+ *
+ * Without this an upload is a one-way door: uploaded coordinates cannot be
+ * edited row by row, so a file chosen by mistake could only ever be replaced
+ * by another file, never simply removed.
+ *
+ * Everything the upload wrote goes: the points, the preview kept on the
+ * document, the summary, and the spooled file. What is left is an empty
+ * table, which is where a plan starts.
+ */
+export const clearUploadedCoordinates = async (
+    id: string,
+    kind: PointKind = 'coordinates',
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { type: 1, point_source: 1 },
+        }),
+    );
+
+    if (!isUploaded(plan, kind)) {
+        throw ApiError.badRequest(
+            'These coordinates were not uploaded, so there is no file to remove. '
+            + 'Edit or clear the table instead.',
+        );
+    }
+
+    await planPoints.clearPoints(id, kind);
+    const spoolId = plan.point_source?.spool_id;
+    if (spoolId) await uploadSpool.discard(spoolId);
+
+    const update: Partial<IPlan> = {
+        point_count: 0,
+        // null rather than undefined: mongoose strips undefined out of $set,
+        // and these have to actually go, not merely appear to.
+        point_summary: null as never,
+        point_source: null as never,
+    };
+    if (kind === 'coordinates') update.coordinates = [];
+
+    return requirePlan(await planRepository.editPlan(id, update, options));
+};
+
 export const editCoordinates = async (
     id: string,
     coordinates: CoordinateProps[],

@@ -27,6 +27,7 @@ import {
     uploadCoordinatesController,
     previewCoordinatesController,
     remapCoordinatesController,
+    clearUploadedCoordinatesController,
     planJobStatusController,
 } from './plan.controller';
 
@@ -73,6 +74,7 @@ planRouter.post(
 planRouter.post('/coordinates/upload/:plan_id', uploadCoordinatesController);
 planRouter.post('/coordinates/preview', previewCoordinatesController);
 planRouter.post('/coordinates/remap/:plan_id', remapCoordinatesController);
+planRouter.delete('/coordinates/uploaded/:plan_id', clearUploadedCoordinatesController);
 
 planRouter.get('/generate/:plan_id', generatePlanController);
 // Progress for a background generation (Task 12). Polled by the client after

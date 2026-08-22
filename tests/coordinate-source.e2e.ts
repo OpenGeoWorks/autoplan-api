@@ -104,6 +104,37 @@ const main = async () => {
         check('so the coordinate table still saves',
               typedOver.coordinates?.length === 12, `${typedOver.coordinates?.length}`);
 
+        console.log('\n== an upload can be removed, not only replaced ==');
+        const undone = await make('__source_undo__');
+        ids.push(String(undone._id));
+        await planService.receiveCoordinateUpload(String(undone._id),
+            Readable.from([Buffer.from(csv(400, 600000))]),
+            { fileName: 'wrong.csv', declaredBytes: 20_000 }, String(undone.user));
+        const before = await Plan.findById(undone._id).lean() as any;
+        const spoolBefore = before.point_source?.spool_id;
+        check('uploaded to begin with', planService.isUploaded(before));
+
+        const cleared = await planService.clearUploadedCoordinates(String(undone._id));
+        check('no longer counts as uploaded', !planService.isUploaded(cleared));
+        check('the points are gone',
+              (await planPoints.countPoints(String(undone._id), 'coordinates')) === 0);
+        check('the preview is gone', (cleared.coordinates?.length ?? 0) === 0);
+        check('the count is reset', (cleared.point_count ?? 0) === 0);
+        check('the file is off the disk',
+              !spoolBefore || !(await uploadSpool.exists(spoolBefore)));
+
+        const retyped = await planService.editCoordinates(String(undone._id), typed(7));
+        check('the table can be typed in again',
+              retyped.coordinates?.length === 7, `${retyped.coordinates?.length}`);
+
+        try {
+            await planService.clearUploadedCoordinates(String(undone._id));
+            check('clearing a table that was never uploaded is refused', false, 'it ran');
+        } catch (err) {
+            check('clearing a table that was never uploaded is refused',
+                  /not uploaded/i.test((err as Error).message));
+        }
+
         console.log('\n== uploading again is the way to change it ==');
         const again = await planService.receiveCoordinateUpload(String(uploaded._id),
             Readable.from([Buffer.from(csv(40, 900000))]),
