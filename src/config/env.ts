@@ -43,11 +43,16 @@ const env = {
      */
     ASYNC_POINT_THRESHOLD: parseInt(process.env.ASYNC_POINT_THRESHOLD as string, 10) || 25_000,
     // Uploads at or above this many bytes are parsed by a worker instead of
-    // inside the request. 1 MB is about 25,000 rows of a coordinate file,
-    // which is where generation switches to a job too -- the two thresholds
-    // describe the same point: past here, the wait is long enough that the
-    // browser needs something to look at.
-    ASYNC_UPLOAD_BYTES: parseInt(process.env.ASYNC_UPLOAD_BYTES as string, 10) || 1024 * 1024,
+    // inside the request. Zero -- the default -- disables that: every upload
+    // is parsed in the request it arrived on.
+    //
+    // Queueing was built and then turned off. It made the request return in
+    // about a second instead of sixty, but the client still has to wait for
+    // the survey to be stored before it can show anything, so it traded one
+    // wait for the same wait plus a polling loop and a second failure mode.
+    // Set this to a byte count to turn it back on -- worth revisiting where
+    // the database is close enough that storing is quick.
+    ASYNC_UPLOAD_BYTES: parseInt(process.env.ASYNC_UPLOAD_BYTES as string, 10) || 0,
     // Where an uploaded survey waits between the request that received it and
     // the worker that parses it.
     //

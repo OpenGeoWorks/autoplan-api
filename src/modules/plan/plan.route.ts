@@ -26,6 +26,7 @@ import {
     inspectCadUploadController,
     uploadCoordinatesController,
     previewCoordinatesController,
+    remapCoordinatesController,
     planJobStatusController,
 } from './plan.controller';
 
@@ -71,6 +72,7 @@ planRouter.post(
 // leaves `req` readable as a stream.
 planRouter.post('/coordinates/upload/:plan_id', uploadCoordinatesController);
 planRouter.post('/coordinates/preview', previewCoordinatesController);
+planRouter.post('/coordinates/remap/:plan_id', remapCoordinatesController);
 
 planRouter.get('/generate/:plan_id', generatePlanController);
 // Progress for a background generation (Task 12). Polled by the client after

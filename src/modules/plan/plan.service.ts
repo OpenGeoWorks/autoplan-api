@@ -646,6 +646,8 @@ export const uploadCoordinates = async (
         maxRows?: number;
         /** Called with the running row count, for a job to report progress. */
         onProgress?: (rows: number) => Promise<void> | void;
+        /** Spool file this came from, recorded so its columns can be redone. */
+        spoolId?: string;
         /** Declared upload size, when the client sent one. */
         declaredBytes?: number;
     },
@@ -747,6 +749,10 @@ export const uploadCoordinates = async (
             row_count: result.rows,
             skipped_rows: result.skipped,
             uploaded_at: new Date(),
+            // Kept so the columns can be re-applied here rather than by
+            // sending the survey back to the browser to be rearranged.
+            spool_id: meta.spoolId,
+            mapping: result.mapping as unknown as Record<string, number | null>,
         },
     };
 
@@ -1081,13 +1087,18 @@ const preparePlanForDrawing = async (id: string, plan: IPlan): Promise<void> => 
 /**
  * Whether an upload is too big to parse inside the request.
  *
- * Judged on the declared size, because it is the only thing known before a
- * byte is read. The default corresponds to roughly the point count at which
- * generation switches to a job, so the two thresholds mean the same thing:
- * past here, a request held open tells the user nothing while it works.
+ * Off by default. Judged on the declared size when it is on, because that is
+ * the only thing known before a byte is read.
+ *
+ * Queueing an upload turned out not to buy what it looked like it would: the
+ * request returned in a second, but the client cannot show a coordinate table
+ * until the survey is stored, so it waited exactly as long -- through a
+ * polling loop, with a worker in between that can fail on its own. The work
+ * that made storing five times faster is what actually helped.
  */
 export const shouldQueueUpload = (declaredBytes?: number): boolean =>
-    Boolean(declaredBytes && declaredBytes >= env.ASYNC_UPLOAD_BYTES);
+    env.ASYNC_UPLOAD_BYTES > 0
+    && Boolean(declaredBytes && declaredBytes >= env.ASYNC_UPLOAD_BYTES);
 
 export interface UploadResult {
     plan?: IPlan;
@@ -1122,12 +1133,6 @@ export const receiveCoordinateUpload = async (
     /** Record the job without publishing it, so the caller can run it. */
     publish = true,
 ): Promise<UploadResult> => {
-    if (!shouldQueueUpload(meta.declaredBytes)) {
-        // Small enough that the wait is shorter than the round trip it would
-        // take to hand it off.
-        return { plan: await uploadCoordinates(id, file, meta, options) };
-    }
-
     // Confirm the plan exists and that this caller may write to it before
     // spending any time on the file itself.
     const plan = requirePlan(await planRepository.getPlanById(id, options));
@@ -1139,8 +1144,22 @@ export const receiveCoordinateUpload = async (
             'Split the survey or reduce it before uploading.');
     }
 
+    // The file is always spooled, whether or not the work is queued. Writing
+    // it to disk costs a fraction of a second and it is what lets the user
+    // change their mind about the columns afterwards: the survey is re-read
+    // here rather than sent back to the browser to be rearranged there.
     const spoolId = randomUUID();
+    const previous = plan.point_source?.spool_id;
     await uploadSpool.park(spoolId, file);
+    if (previous && previous !== spoolId) await uploadSpool.discard(previous);
+
+    if (!shouldQueueUpload(meta.declaredBytes)) {
+        return {
+            plan: await uploadCoordinates(
+                id, uploadSpool.read(spoolId), { ...meta, spoolId }, options,
+            ),
+        };
+    }
 
     let job;
     try {
@@ -1164,6 +1183,48 @@ export const receiveCoordinateUpload = async (
     logger.info(`queued upload for plan ${plan.id} as job ${job.id} `
         + `(${((meta.declaredBytes ?? 0) / 1e6).toFixed(1)} MB)`);
     return { job };
+};
+
+/**
+ * Re-read a survey that is already uploaded, using different columns.
+ *
+ * This is the "which column is which" dialog, done properly. The obvious
+ * implementation is to hand the rows to the browser, let the user drag the
+ * columns about, and send the result back -- which works until the survey is
+ * a million points, at which point it is the thing that makes the tab die.
+ *
+ * So the file stays here. The dialog is shown a preview, the user picks
+ * columns, and only the column indices come back; the survey is re-read from
+ * the spool and the point store replaced. Nothing large moves in either
+ * direction.
+ */
+export const remapCoordinates = async (
+    id: string,
+    mapping: ColumnMapping,
+    kind: PointKind = 'coordinates',
+    options?: RepoOptions,
+): Promise<IPlan> => {
+    const plan = requirePlan(await planRepository.getPlanById(id, options));
+    const spoolId = plan.point_source?.spool_id;
+
+    if (!spoolId || !(await uploadSpool.exists(spoolId))) {
+        throw ApiError.badRequest(
+            'The uploaded file is no longer available to re-read. Upload it '
+            + 'again to change which column is which.',
+        );
+    }
+
+    return uploadCoordinates(
+        id,
+        uploadSpool.read(spoolId),
+        {
+            fileName: plan.point_source?.file_name,
+            kind,
+            mapping,
+            spoolId,
+        },
+        options,
+    );
 };
 
 /**
@@ -1211,6 +1272,7 @@ export const runUploadJob = async (jobId: string): Promise<void> => {
                 kind: payload.kindOfPoints,
                 mapping: payload.mapping as ColumnMapping | undefined,
                 declaredBytes: payload.bytes,
+                spoolId: payload.spoolId,
                 onProgress: async rows => {
                     // The client polls every 1.5s; reporting more often than
                     // it can read is noise on both sides.
@@ -1234,9 +1296,10 @@ export const runUploadJob = async (jobId: string): Promise<void> => {
             : 'The survey could not be read';
         await planJobs.failJob(jobId, message);
         logger.error(`upload job ${jobId} failed: ${(error as Error).message}`);
-    } finally {
-        await uploadSpool.discard(payload.spoolId);
     }
+    // Deliberately not discarded here. The file is what a column remap
+    // re-reads; the worker's sweep removes it once it is old enough that no
+    // one is still adjusting the columns.
 };
 
 export const shouldRunAsync = (plan: IPlan): boolean =>

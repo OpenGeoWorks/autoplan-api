@@ -331,6 +331,15 @@ export interface IPlan {
         row_count?: number;
         skipped_rows?: number;
         uploaded_at?: Date;
+        /**
+         * The uploaded file, kept in the spool so the columns can be
+         * re-interpreted without it being sent again -- and, more to the
+         * point, without the coordinates ever coming back to the browser to
+         * be rearranged there.
+         */
+        spool_id?: string;
+        /** Columns last used to read it, so the dialog can show them. */
+        mapping?: Record<string, number | null>;
     };
     /** Computation-only "plans" hold field computations that can later be converted or imported. */
     computation_only: boolean;

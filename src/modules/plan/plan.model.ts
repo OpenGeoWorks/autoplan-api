@@ -420,6 +420,14 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
                     row_count: Number,
                     skipped_rows: Number,
                     uploaded_at: Date,
+                    // The uploaded file is kept so its columns can be
+                    // re-applied server-side; the client never gets the
+                    // coordinates back in order to rearrange them.
+                    spool_id: String,
+                    // Mixed, deliberately not a Map: a Map registers a
+                    // `field.$*` wildcard path, and projecting one of those
+                    // is what made every plan-list request return a 500.
+                    mapping: Schema.Types.Mixed,
                 },
                 { _id: false },
             ),

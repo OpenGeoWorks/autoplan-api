@@ -283,6 +283,26 @@ export const previewCoordinatesController = catchAsync(async (req: Request, res:
     sendSuccess(res, previewText(text));
 });
 
+/**
+ * Apply a different column arrangement to a survey already uploaded.
+ *
+ * Takes column indices, not coordinates: the file is re-read on this side.
+ */
+export const remapCoordinatesController = catchAsync(async (req: Request, res: Response) => {
+    const body = req.body as { mapping?: Record<string, number | null>; kind?: string };
+    if (!body?.mapping || typeof body.mapping !== 'object') {
+        throw ApiError.badRequest('mapping is required');
+    }
+
+    const plan = await planService.remapCoordinates(
+        req.params.plan_id,
+        body.mapping as never,
+        body.kind === 'boundary' ? 'boundary' : 'coordinates',
+        ownerOptions(req),
+    );
+    sendSuccess(res, plan);
+});
+
 export const uploadCoordinatesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as Record<string, string>;
 
