@@ -4,6 +4,7 @@ import { connectRedis, disconnectRedis } from '@config/redis';
 import logger from '@utils/logger';
 import planJobs from '@modules/plan/plan-job';
 import uploadSpool from '@utils/upload-spool';
+import planPoints from '@modules/plan/plan-points.repository';
 import { runPlanJob, runUploadJob } from '@modules/plan/plan.service';
 
 /**
@@ -52,8 +53,17 @@ const main = async (): Promise<void> => {
     // A job that dies between the API parking a file and the worker storing it
     // would leave tens of megabytes behind for ever. Swept on start and daily:
     // anything older than the job TTL cannot still be wanted.
-    const sweepSpool = () => uploadSpool.sweep(env.JOB_TTL_SECONDS * 1000)
-        .catch(error => logger.warn(`Could not sweep the upload spool: ${error.message}`));
+    const sweepSpool = async () => {
+        try {
+            await uploadSpool.sweep(env.JOB_TTL_SECONDS * 1000);
+            // Half-written replacements from a process that died mid-upload.
+            // Nothing is still writing to one this old.
+            const staged = await planPoints.sweepStaged(env.JOB_TTL_SECONDS * 1000);
+            if (staged) logger.info(`swept ${staged} abandoned staged bucket(s)`);
+        } catch (error) {
+            logger.warn(`Could not sweep: ${(error as Error).message}`);
+        }
+    };
     await sweepSpool();
     const sweeper = setInterval(sweepSpool, 24 * 60 * 60 * 1000);
     sweeper.unref();

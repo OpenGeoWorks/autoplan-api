@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { CoordinateProps } from '@modules/traverse/traverse.interface';
 import PlanPointBucket from './plan-points.model';
-import { PointKind, PointSummary, StoredKind } from './plan.interface';
+import { PointKind, PointSummary, StagingKind, StoredKind } from './plan.interface';
 
 /**
  * Reading and writing the bucketed point store (Task 12).
@@ -11,6 +11,9 @@ import { PointKind, PointSummary, StoredKind } from './plan.interface';
  * caller explicitly asks for it — the streaming reader exists so the export
  * path can hand points to the drawing engine without holding them all.
  */
+
+/** Series that are mid-write, and are nobody's survey until they are promoted. */
+const STAGING_KINDS: StagingKind[] = ['coordinates:staging', 'boundary:staging'];
 
 /**
  * Promote a staged series to the real one.
@@ -178,13 +181,33 @@ export const storageBytes = async (
     kind?: StoredKind,
 ): Promise<number> => {
     const match: Record<string, unknown> = { plan: toObjectId(planId) };
-    if (kind) match.kind = kind;
+    // A half-written replacement is not part of the plan's survey, and
+    // counting it doubled the recorded size of a plan whose upload died.
+    match.kind = kind ?? { $nin: STAGING_KINDS };
 
     const [result] = await PlanPointBucket.aggregate<{ bytes: number }>([
         { $match: match },
         { $group: { _id: null, bytes: { $sum: { $bsonSize: '$$ROOT' } } } },
     ]);
     return result?.bytes ?? 0;
+};
+
+/**
+ * Remove staged series that no upload is still writing.
+ *
+ * The upload path clears its own staging on failure, and clears any leftover
+ * for that plan before it starts. Neither runs if the process is killed
+ * mid-upload, so an abandoned plan can keep a half-written replacement for
+ * ever -- invisible, because it is not the plan's survey, but occupying the
+ * space of one.
+ */
+export const sweepStaged = async (maxAgeMs: number): Promise<number> => {
+    const cutoff = new Date(Date.now() - maxAgeMs);
+    const result = await PlanPointBucket.deleteMany({
+        kind: { $in: STAGING_KINDS },
+        created_at: { $lt: cutoff },
+    });
+    return result.deletedCount ?? 0;
 };
 
 /** Count, extent and elevation range, computed in the database. */
@@ -217,6 +240,7 @@ export const summarise = async (
 export default {
     bucketsFor,
     promoteStaged,
+    sweepStaged,
     storageBytes,
     replacePoints,
     appendPoints,
