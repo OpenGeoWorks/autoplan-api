@@ -21,7 +21,33 @@ const env = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',
     PYTHON_SERVER: process.env.PYTHON_SERVER || '',
     ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || '*',
-    CLOUDINARY_URL: process.env.CLOUDINARY_URL || '',
+    /**
+     * S3-compatible object storage, for the point exports a background job
+     * hands to the drawing engine.
+     *
+     * Linode Object Storage speaks S3 at a regional endpoint. The keys are
+     * read from the LINODE_* names first and fall back to the standard AWS_*
+     * ones, so a deployment already carrying AWS credentials needs no new
+     * names. Leave S3_ENDPOINT unset for AWS proper.
+     *
+     * Replaces Cloudinary, whose plan capped one upload at 10 MB -- less than
+     * a survey of any size takes.
+     */
+    S3: {
+        bucket: process.env.S3_BUCKET || process.env.AWS_BUCKET || '',
+        endpoint: process.env.S3_ENDPOINT || '',
+        region: process.env.S3_REGION || process.env.AWS_REGION || 'us-east-1',
+        accessKeyId:
+            process.env.LINODE_ACCESS_KEY_ID
+            || process.env.AWS_ACCESS_KEY_ID
+            || process.env.AWS_ACCESS_KEY
+            || '',
+        secretAccessKey:
+            process.env.LINODE_SECRET_ACCESS_KEY
+            || process.env.AWS_SECRET_ACCESS_KEY
+            || process.env.AWS_SECRET_KEY
+            || '',
+    },
     /**
      * Largest survey the service accepts.
      *
