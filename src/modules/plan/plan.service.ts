@@ -13,7 +13,7 @@ import planRepository from './plan.repository';
 import planPoints, { PREVIEW_LIMIT } from './plan-points.repository';
 import { CoordinateLimitError, CoordinateParseError, streamCoordinates } from './coordinate-stream';
 import { ColumnMapping } from './coordinate-parser';
-import { PointKind } from './plan.interface';
+import { PointKind, stagingKindFor } from './plan.interface';
 import planJobs, { PlanJob } from './plan-job';
 import objectStorage from '@utils/object-storage';
 import uploadSpool from '@utils/upload-spool';
@@ -674,8 +674,12 @@ export const uploadCoordinates = async (
 
     const kind: PointKind = meta.kind ?? 'coordinates';
 
-    // Replace, not append: an upload is a new dataset for this plan.
-    await planPoints.clearPoints(id, kind);
+    // The new series is written to one side and swapped in at the end.
+    // Clearing first and writing after meant an unreadable file destroyed the
+    // survey already stored -- and left the plan claiming a point count whose
+    // points were gone, which is worse than losing them loudly.
+    const staging = stagingKindFor(kind);
+    await planPoints.clearPoints(id, staging);
 
     let seq = 0;
     let rows = 0;
@@ -695,7 +699,7 @@ export const uploadCoordinates = async (
         const start = seq;
         seq += planPoints.bucketsFor(batch.length);
 
-        const write = planPoints.appendPoints(id, kind, batch, start)
+        const write = planPoints.appendPoints(id, staging, batch, start)
             .finally(() => inflight.delete(write));
         inflight.add(write);
 
@@ -729,8 +733,9 @@ export const uploadCoordinates = async (
         // Let the writes still in flight settle before clearing, or they would
         // land after the cleanup and leave orphaned buckets behind.
         await Promise.allSettled(inflight);
-        // Whatever was written before the limit was hit is not a survey.
-        await planPoints.clearPoints(id, kind);
+        // Only the half-written replacement goes; whatever was already stored
+        // for this plan is untouched.
+        await planPoints.clearPoints(id, staging);
 
         // These carry messages written for the person who uploaded the file, so
         // they must reach them rather than becoming a generic 500.
@@ -738,6 +743,9 @@ export const uploadCoordinates = async (
         if (error instanceof CoordinateParseError) throw ApiError.badRequest(error.message);
         throw error;
     }
+
+    // Whole and readable, so it becomes the series for this plan.
+    await planPoints.promoteStaged(id, staging, kind);
 
     const summary = await planPoints.summarise(id, kind);
 

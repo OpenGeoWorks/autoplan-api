@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { CoordinateProps } from '@modules/traverse/traverse.interface';
 import PlanPointBucket from './plan-points.model';
-import { PointKind, PointSummary } from './plan.interface';
+import { PointKind, PointSummary, StoredKind } from './plan.interface';
 
 /**
  * Reading and writing the bucketed point store (Task 12).
@@ -11,6 +11,24 @@ import { PointKind, PointSummary } from './plan.interface';
  * caller explicitly asks for it — the streaming reader exists so the export
  * path can hand points to the drawing engine without holding them all.
  */
+
+/**
+ * Promote a staged series to the real one.
+ *
+ * Two writes rather than a transaction: the old series is removed and the
+ * staged one re-tagged. The unique (plan, kind, seq) index is what forces the
+ * order -- the staged buckets cannot take the real kind while the old ones
+ * still hold those keys.
+ */
+export const promoteStaged = async (
+    planId: string | Types.ObjectId,
+    staging: StoredKind,
+    kind: PointKind,
+): Promise<void> => {
+    const plan = toObjectId(planId);
+    await PlanPointBucket.deleteMany({ plan, kind });
+    await PlanPointBucket.updateMany({ plan, kind: staging }, { $set: { kind } });
+};
 
 /** Points per document. Large enough that a million points is ~1000 documents,
  *  small enough that a bucket stays far inside the 16 MB document limit. */
@@ -26,7 +44,7 @@ const toObjectId = (id: string | Types.ObjectId): Types.ObjectId =>
 /** Replace every point of one kind for a plan. */
 export const replacePoints = async (
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
     points: CoordinateProps[],
 ): Promise<void> => {
     const plan = toObjectId(planId);
@@ -55,7 +73,7 @@ export const bucketsFor = (points: number): number => Math.ceil(points / BUCKET_
 /** Append a batch while streaming an upload, continuing from ``startSeq``. */
 export const appendPoints = async (
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
     points: CoordinateProps[],
     startSeq: number,
 ): Promise<number> => {
@@ -78,7 +96,7 @@ export const appendPoints = async (
 
 export const clearPoints = async (
     planId: string | Types.ObjectId,
-    kind?: PointKind,
+    kind?: StoredKind,
 ): Promise<void> => {
     const filter: Record<string, unknown> = { plan: toObjectId(planId) };
     if (kind) filter.kind = kind;
@@ -87,7 +105,7 @@ export const clearPoints = async (
 
 export const countPoints = async (
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
 ): Promise<number> => {
     const result = await PlanPointBucket.aggregate<{ total: number }>([
         { $match: { plan: toObjectId(planId), kind } },
@@ -105,7 +123,7 @@ export const countPoints = async (
  */
 export async function* streamPoints(
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
 ): AsyncGenerator<CoordinateProps[]> {
     const cursor = PlanPointBucket.find({ plan: toObjectId(planId), kind })
         .sort({ seq: 1 })
@@ -120,7 +138,7 @@ export async function* streamPoints(
 /** The first ``limit`` points, for display. */
 export const readPreview = async (
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
     limit = PREVIEW_LIMIT,
 ): Promise<CoordinateProps[]> => {
     const needed = Math.ceil(limit / BUCKET_SIZE) || 1;
@@ -140,7 +158,7 @@ export const readPreview = async (
 /** Every point, in order. Only for callers that genuinely need them all. */
 export const readAllPoints = async (
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
 ): Promise<CoordinateProps[]> => {
     const points: CoordinateProps[] = [];
     for await (const batch of streamPoints(planId, kind)) {
@@ -157,7 +175,7 @@ export const readAllPoints = async (
  */
 export const storageBytes = async (
     planId: string | Types.ObjectId,
-    kind?: PointKind,
+    kind?: StoredKind,
 ): Promise<number> => {
     const match: Record<string, unknown> = { plan: toObjectId(planId) };
     if (kind) match.kind = kind;
@@ -172,7 +190,7 @@ export const storageBytes = async (
 /** Count, extent and elevation range, computed in the database. */
 export const summarise = async (
     planId: string | Types.ObjectId,
-    kind: PointKind,
+    kind: StoredKind,
 ): Promise<PointSummary> => {
     const [result] = await PlanPointBucket.aggregate([
         { $match: { plan: toObjectId(planId), kind } },
@@ -198,6 +216,7 @@ export const summarise = async (
 
 export default {
     bucketsFor,
+    promoteStaged,
     storageBytes,
     replacePoints,
     appendPoints,

@@ -348,6 +348,20 @@ export interface IPlan {
 /** Which series of points a bucket holds. */
 export type PointKind = 'coordinates' | 'boundary';
 
+/**
+ * Where a replacement series is written while it is still arriving.
+ *
+ * An upload used to delete the old points first and write the new ones after,
+ * so a file that turned out to be unreadable took the previous survey with
+ * it -- and left the plan claiming a point count it no longer had. The new
+ * series is staged under its own kind and only swapped in once it is whole.
+ */
+export type StagingKind = 'coordinates:staging' | 'boundary:staging';
+export type StoredKind = PointKind | StagingKind;
+
+export const stagingKindFor = (kind: PointKind): StagingKind =>
+    `${kind}:staging` as StagingKind;
+
 export interface IPlanPointBucket {
     plan: Types.ObjectId;
     kind: PointKind;

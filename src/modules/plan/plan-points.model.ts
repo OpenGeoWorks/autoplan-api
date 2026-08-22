@@ -36,7 +36,10 @@ const planPointBucketSchema = new Schema<IPlanPointBucket>(
         // heights and its boundary, and they are read separately.
         kind: {
             type: String,
-            enum: ['coordinates', 'boundary'],
+            // The ":staging" kinds hold a replacement series while it is
+            // still being written, so a failed upload cannot destroy the one
+            // already there.
+            enum: ['coordinates', 'boundary', 'coordinates:staging', 'boundary:staging'],
             default: 'coordinates',
             required: true,
         },
