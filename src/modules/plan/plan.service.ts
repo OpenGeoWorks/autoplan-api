@@ -750,7 +750,10 @@ export const uploadCoordinates = async (
     const plan = requirePlan(
         await planRepository.getPlanById(id, {
             filter: options?.filter,
-            projection: { type: 1, page_size: 1, auto_scale_sizes: 1 },
+            projection: {
+                type: 1, page_size: 1, auto_scale_sizes: 1,
+                topographic_boundary: 1, layout_boundary: 1,
+            },
         }),
     );
 
@@ -851,6 +854,18 @@ export const uploadCoordinates = async (
         // The document carries a preview only; the full series lives in the
         // point store and is streamed to the drawing engine on generation.
         update.coordinates = preview;
+    } else {
+        // A boundary belongs to the plan's boundary object, not to the top
+        // level. Stored there it can be shown in the table, and its legs and
+        // area computed before drawing -- without this the points went to the
+        // point store and the plan looked as though it had no boundary at all.
+        const key = plan.type === PlanType.LAYOUT ? 'layout_boundary' : 'topographic_boundary';
+        const existing = (plan as unknown as Record<string, unknown>)[key] as
+            Record<string, unknown> | undefined;
+        (update as unknown as Record<string, unknown>)[key] = {
+            ...(existing ?? {}),
+            coordinates: preview,
+        };
     }
 
     // Sizes still derive from the drawing extent for the plan types that use
