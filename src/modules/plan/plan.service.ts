@@ -835,8 +835,6 @@ export const uploadCoordinates = async (
     const summary = await planPoints.summarise(id, kind);
 
     const update: Partial<IPlan> = {
-        point_count: summary.count,
-        point_summary: summary,
         point_source: {
             file_name: meta.fileName,
             row_count: result.rows,
@@ -854,6 +852,13 @@ export const uploadCoordinates = async (
         // The document carries a preview only; the full series lives in the
         // point store and is streamed to the drawing engine on generation.
         update.coordinates = preview;
+
+        // point_count and point_summary describe the survey, and only the
+        // survey. They decide whether a plan is drawn in the background and
+        // what the coordinate step reports, so letting a boundary upload
+        // write them made a plan of 150 spot heights claim to hold 8.
+        update.point_count = summary.count;
+        update.point_summary = summary;
     } else {
         // A boundary belongs to the plan's boundary object, not to the top
         // level. Stored there it can be shown in the table, and its legs and
