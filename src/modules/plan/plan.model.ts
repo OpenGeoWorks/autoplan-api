@@ -428,6 +428,7 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
                     // `field.$*` wildcard path, and projecting one of those
                     // is what made every plan-list request return a 500.
                     mapping: Schema.Types.Mixed,
+                    kind: String,
                 },
                 { _id: false },
             ),

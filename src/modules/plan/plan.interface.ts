@@ -340,6 +340,14 @@ export interface IPlan {
         spool_id?: string;
         /** Columns last used to read it, so the dialog can show them. */
         mapping?: Record<string, number | null>;
+        /**
+         * Which series was uploaded. A topographic plan holds a boundary and
+         * a survey and they are uploaded separately, so without this a
+         * boundary upload would make the survey look like it came from a file
+         * too. Absent on records written before this existed, which were all
+         * coordinates.
+         */
+        kind?: PointKind;
     };
     /** Computation-only "plans" hold field computations that can later be converted or imported. */
     computation_only: boolean;

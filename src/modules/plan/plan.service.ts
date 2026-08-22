@@ -210,6 +210,27 @@ const dedupeById = <T extends { id: string }>(items: T[]): T[] => {
     return result;
 };
 
+/**
+ * Whether a plan's coordinates came from a file rather than the table.
+ *
+ * The distinction matters because the two have different owners. Typed
+ * coordinates live in the plan document and the table is where they are
+ * edited. Uploaded ones live in the point store, the file is the record of
+ * them, and the table only ever shows the first few hundred -- so "save the
+ * table" is not an edit, it is a truncation.
+ *
+ * Derived from point_source rather than kept as a second flag: it is set by
+ * the upload and cleared by a manual edit, so it cannot disagree with itself,
+ * and plans uploaded before this existed are already correct.
+ */
+export const isUploaded = (
+    plan: Pick<IPlan, 'point_source'>,
+    kind: PointKind = 'coordinates',
+): boolean =>
+    Boolean(plan.point_source?.uploaded_at)
+    // Records written before point_source carried a kind were all coordinates.
+    && (plan.point_source?.kind ?? 'coordinates') === kind;
+
 export const editCoordinates = async (
     id: string,
     coordinates: CoordinateProps[],
@@ -220,6 +241,7 @@ export const editCoordinates = async (
             filter: options?.filter,
             projection: {
                 type: 1,
+                point_source: 1,
                 topographic_boundary: 1,
                 topographic_setting: 1,
                 elevations: 1,
@@ -229,15 +251,17 @@ export const editCoordinates = async (
         }),
     );
 
-    // The browser only ever holds a preview of a large survey, so a save that
-    // carries fewer points than are stored would silently destroy the rest.
-    // Editing a preview is refused rather than accepted and truncated.
-    const storedCount = await planPoints.countPoints(id, 'coordinates');
-    if (storedCount > PREVIEW_LIMIT && coordinates.length <= PREVIEW_LIMIT) {
+    // An uploaded survey is not editable row by row. The table shows a preview
+    // of it, so writing that back would replace the survey with its own first
+    // few hundred points -- and even where the whole thing fits in the
+    // preview, the file is the record of what was surveyed. Changing it means
+    // uploading a different file.
+    if (isUploaded(plan)) {
+        const storedCount = await planPoints.countPoints(id, 'coordinates');
         throw ApiError.badRequest(
-            `This plan holds ${storedCount.toLocaleString()} survey points and the ` +
-            `coordinate table shows only the first ${PREVIEW_LIMIT}. Saving them would ` +
-            `discard the rest — upload a replacement file instead.`,
+            `These ${storedCount.toLocaleString()} coordinates came from ` +
+            `${plan.point_source?.file_name ?? 'an uploaded file'}. Upload a replacement ` +
+            'file to change them.',
         );
     }
 
@@ -250,7 +274,15 @@ export const editCoordinates = async (
     }
 
     const updatedCoordinates = dedupeById(coordinates);
-    const update: Partial<IPlan> = { coordinates: updatedCoordinates };
+    // Typed coordinates: the document owns them now, so any record of a file
+    // they once came from is cleared rather than left to contradict it.
+    const update: Partial<IPlan> = {
+        coordinates: updatedCoordinates,
+        // null, not undefined: mongoose strips undefined out of $set, so the
+        // field would have been left standing while the code read as if it
+        // had been cleared.
+        point_source: null as never,
+    };
     let recordSizeAfterWrite = false;
 
     // A hand-edited set replaces the stored series outright.
@@ -765,6 +797,7 @@ export const uploadCoordinates = async (
             // sending the survey back to the browser to be rearranged.
             spool_id: meta.spoolId,
             mapping: result.mapping as unknown as Record<string, number | null>,
+            kind,
         },
     };
 
