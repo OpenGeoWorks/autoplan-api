@@ -43,6 +43,48 @@ chain and rendered by the global error handler.
 (`Authorization: Bearer <token>`) and a revocable Redis-backed token (`x-api-token`).
 Logging out revokes the api token.
 
+## Known inefficiency: the whole survey is shipped to be thinned
+
+A background generation reads every point of a survey out of MongoDB, writes
+them to object storage as NDJSON, and hands the engine a link. The engine then
+thins them on arrival, keeping one point per printed millimetre of the sheet,
+and draws from what is left.
+
+For a 1.5-million-point survey that is a 113 MB export and roughly a minute of
+database reads to retain about 4,400 points -- 0.3% of what was moved. The
+transfer exists only so the engine can decide what to discard.
+
+The decision does not need the engine. It is:
+
+```
+cell = 1.0mm x scale / 1000      # metres of ground per printed millimetre
+key  = (floor(easting / cell), floor(northing / cell))
+```
+
+and the first point to land in a cell wins. `plan.scale` is here already, so
+the API could thin before shipping.
+
+Two ways to do it, and they are not equally worthwhile:
+
+1. **While streaming out of the repository.** A set of cell keys as points are
+   read. Cuts the upload from 113 MB to well under 1 MB, but still reads every
+   document -- and the read is the slow half.
+2. **In MongoDB.** `$unwind` the buckets, `$group` by cell, `$first` per group,
+   so only survivors leave the database. Removes the read *and* the transfer.
+
+Option 2 is the one worth having, with two caveats. `$first` follows pipeline
+order and traverse order is meaningful here -- the engine keeps the first point
+*walked*, which is what makes recovered ids and station order mean anything --
+so it needs an explicit `$sort` on bucket `seq` before the group. And the sheet
+may be auto-fitted to a coarser scale than the one requested, which makes the
+cell larger; thinning at the requested scale keeps a superset of what the
+engine would, which is safe, whereas thinning coarser would drop points it
+would have kept.
+
+The cost is that the rule would then exist twice, in TypeScript and in Python
+(`point_stream.GridDecimator`). Worth a test that runs a fixture through both
+and asserts they retain the same points, or they will drift.
+
 ## Surveying computations
 
 - **Back computation** — distances, whole-circle bearings, and (optionally) parcel area
