@@ -412,6 +412,18 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
                 { _id: false },
             ),
         },
+        // The last plan drawn for this record, so it can be downloaded again
+        // without redrawing it.
+        generated: {
+            type: new Schema(
+                {
+                    url: String,
+                    generated_at: Date,
+                    scale: Number,
+                },
+                { _id: false },
+            ),
+        },
         point_source: {
             type: new Schema(
                 {

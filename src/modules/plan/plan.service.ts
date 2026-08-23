@@ -956,6 +956,7 @@ export const runPlanJob = async (jobId: string): Promise<void> => {
         }
 
         const { url } = (await response.json()) as { url: string };
+        await recordGeneratedPlan(job.plan, url, plan.scale);
         await planJobs.completeJob(jobId, url);
         logger.info(`job ${jobId} complete`);
     } catch (error) {
@@ -1428,6 +1429,28 @@ export interface GenerateResult {
  * job id immediately: the work can run for minutes, and a request held open
  * that long tells the user nothing and eventually meets a proxy timeout.
  */
+/**
+ * Note the plan that was drawn, so it can be had again without redrawing.
+ *
+ * Best effort on purpose: the sheet exists and its URL is on its way back to
+ * the caller by the time this runs, so failing to write the note must not
+ * turn a successful generation into an error.
+ */
+const recordGeneratedPlan = async (
+    id: string,
+    url: string,
+    scale?: number,
+): Promise<void> => {
+    try {
+        await planRepository.editPlan(id, {
+            generated: { url, generated_at: new Date(), scale },
+        });
+    } catch (error) {
+        logger.warn(`Could not record the generated plan for ${id}: `
+            + `${(error as Error).message}`);
+    }
+};
+
 export const generatePlan = async (
     id: string,
     userId: string,
@@ -1457,6 +1480,7 @@ export const generatePlan = async (
     }
 
     const responseData = (await response.json()) as { url: string };
+    await recordGeneratedPlan(id, responseData.url, plan.scale);
     return { url: responseData.url };
 };
 

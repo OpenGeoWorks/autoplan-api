@@ -325,6 +325,19 @@ export interface IPlan {
         measured_at?: Date;
     };
     /** The uploaded source file, kept as the canonical record of the survey. */
+    /**
+     * The last plan drawn for this record.
+     *
+     * Generation used to hand the URL straight back to whoever asked and keep
+     * no note of it, so a plan drawn yesterday could only be had by drawing it
+     * again -- minutes of work for a file that already existed.
+     */
+    generated?: {
+        url: string;
+        generated_at: Date;
+        /** Scale it was actually drawn at, which is not always the one asked for. */
+        scale?: number;
+    };
     point_source?: {
         file_name?: string;
         url?: string;
