@@ -314,6 +314,21 @@ export const remapCoordinatesController = catchAsync(async (req: Request, res: R
     sendSuccess(res, plan);
 });
 
+/**
+ * A signed, expiring link to this plan's last drawing.
+ *
+ * ownerOptions carries the user filter, so a plan belonging to someone else is
+ * not found rather than refused -- which also means this cannot be used to
+ * discover whose plan an id belongs to.
+ */
+export const downloadPlanController = catchAsync(async (req: Request, res: Response) => {
+    const result = await planService.getPlanDownloadUrl(
+        req.params.plan_id,
+        ownerOptions(req),
+    );
+    sendSuccess(res, result);
+});
+
 export const uploadCoordinatesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as Record<string, string>;
 

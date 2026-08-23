@@ -417,7 +417,8 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         generated: {
             type: new Schema(
                 {
-                    url: String,
+                    // The object key. Private; a link is signed on request.
+                    key: String,
                     generated_at: Date,
                     scale: Number,
                 },

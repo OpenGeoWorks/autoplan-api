@@ -1,6 +1,7 @@
 import { Readable } from 'stream';
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import env from '@config/env';
 import logger from '@utils/logger';
 
@@ -17,15 +18,17 @@ import logger from '@utils/logger';
  */
 
 /**
- * Objects are readable without a signature.
+ * Objects are private.
  *
- * The engine fetches point exports by URL and the plan artefacts it writes are
- * what a finished plan is shared with, so both are served as plain links. The
- * bucket has to permit anonymous GET for that to work -- a private bucket
- * returns 403 on the link rather than failing at upload time, which is worth
- * knowing when a plan will not download.
+ * A survey is a client's data. Nothing here is reachable by knowing its URL:
+ * a link is signed, on request, for someone the caller has already shown is
+ * entitled to it, and it stops working shortly afterwards.
  */
-const DEFAULT_ACL = 'public-read';
+const DEFAULT_ACL = 'private';
+
+/** How long a download link lasts. Long enough to click and for the transfer
+ *  to finish, short enough that a copied link is not a lasting hole. */
+export const DOWNLOAD_URL_TTL_SECONDS = 15 * 60;
 
 let client: S3Client | null = null;
 
@@ -66,13 +69,12 @@ const keyFor = (folder: string, publicId: string): string =>
     (folder ? `${folder.replace(/^\/+|\/+$/g, '')}/${publicId}` : publicId);
 
 /**
- * Permanent URL for an object.
+ * Where an object lives. Not a link that will open -- objects are private.
  *
- * Path style -- endpoint/bucket/key -- because a custom endpoint's bucket name
- * cannot be assumed to resolve as a subdomain. Matches what the drawing engine
- * builds for the artefacts it uploads.
+ * Kept for logs and errors: a bare key is hard to act on, and this says which
+ * bucket and endpoint it is in.
  */
-export const publicUrl = (key: string): string => {
+export const objectUrl = (key: string): string => {
     if (!env.S3.endpoint) {
         return `https://${env.S3.bucket}.s3.${env.S3.region}.amazonaws.com/${key}`;
     }
@@ -109,7 +111,37 @@ export const uploadStream = async (
     });
 
     await upload.done();
-    return publicUrl(key);
+    // The key, not a link. Whether anyone may read this is a question about
+    // who is asking, which the caller answers by signing a URL for them.
+    return key;
+};
+
+/**
+ * A link to one object that works for a short while and then does not.
+ *
+ * The caller decides who is entitled to it; this only mints the link. Nothing
+ * about the signature identifies the recipient, so a signed URL is worth
+ * treating as a password with an expiry rather than as an address.
+ */
+export const signedUrl = async (
+    key: string,
+    expiresIn = DOWNLOAD_URL_TTL_SECONDS,
+    fileName?: string,
+): Promise<string> => {
+    ensureConfigured();
+    return getSignedUrl(
+        getClient(),
+        new GetObjectCommand({
+            Bucket: env.S3.bucket,
+            Key: key,
+            // Makes the browser save it under a name that means something,
+            // rather than the object key.
+            ...(fileName
+                ? { ResponseContentDisposition: `attachment; filename="${fileName}"` }
+                : {}),
+        }),
+        { expiresIn },
+    );
 };
 
 /** Best-effort cleanup; a leftover export is not worth failing a job over. */
@@ -125,4 +157,4 @@ export const remove = async (folder: string, publicId: string): Promise<void> =>
     }
 };
 
-export default { uploadStream, remove, isStorageConfigured, publicUrl };
+export default { uploadStream, remove, isStorageConfigured, objectUrl, signedUrl };

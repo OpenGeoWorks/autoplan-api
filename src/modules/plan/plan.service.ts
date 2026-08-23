@@ -955,9 +955,11 @@ export const runPlanJob = async (jobId: string): Promise<void> => {
             throw new Error(message);
         }
 
-        const { url } = (await response.json()) as { url: string };
-        await recordGeneratedPlan(job.plan, url, plan.scale);
-        await planJobs.completeJob(jobId, url);
+        const { key } = (await response.json()) as { key: string };
+        await recordGeneratedPlan(job.plan, key, plan.scale);
+        // The job carries a link the client can use straight away; it expires,
+        // and the download endpoint mints a fresh one after that.
+        await planJobs.completeJob(jobId, await objectStorage.signedUrl(key));
         logger.info(`job ${jobId} complete`);
     } catch (error) {
         await planJobs.failJob(jobId, (error as Error).message);
@@ -1049,7 +1051,10 @@ export const exportPointsToStorage = async (
         }
     })());
 
-    const url = await objectStorage.uploadStream(body, { folder, publicId });
+    const key = await objectStorage.uploadStream(body, { folder, publicId });
+    // Signed, and only for as long as the engine needs to read it. This is the
+    // survey itself; it must not be left sitting behind a URL.
+    const url = await objectStorage.signedUrl(key);
     return { url, publicId, folder };
 };
 
@@ -1438,17 +1443,52 @@ export interface GenerateResult {
  */
 const recordGeneratedPlan = async (
     id: string,
-    url: string,
+    key: string,
     scale?: number,
 ): Promise<void> => {
     try {
         await planRepository.editPlan(id, {
-            generated: { url, generated_at: new Date(), scale },
+            generated: { key, generated_at: new Date(), scale },
         });
     } catch (error) {
         logger.warn(`Could not record the generated plan for ${id}: `
             + `${(error as Error).message}`);
     }
+};
+
+/**
+ * A link to this plan's last drawing, for whoever is entitled to it.
+ *
+ * The archive is private and no URL to it is stored anywhere, so this is the
+ * only way to reach one: the caller's options carry the owner filter, so a
+ * plan belonging to someone else is simply not found, and the link that comes
+ * back stops working shortly afterwards.
+ */
+export const getPlanDownloadUrl = async (
+    id: string,
+    options?: RepoOptions,
+): Promise<{ url: string; generated_at?: Date }> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { name: 1, generated: 1 },
+        }),
+    );
+
+    const key = plan.generated?.key;
+    if (!key) {
+        throw ApiError.notFound(
+            'No plan has been generated for this record yet. Generate it first.',
+        );
+    }
+
+    // Named for the plan rather than for the object key, which is a timestamp.
+    const fileName = `${(plan.name || 'plan').replace(/[^\w.-]+/g, '_')}.zip`;
+
+    return {
+        url: await objectStorage.signedUrl(key, undefined, fileName),
+        generated_at: plan.generated?.generated_at,
+    };
 };
 
 export const generatePlan = async (
@@ -1479,9 +1519,9 @@ export const generatePlan = async (
         throw ApiError.badRequest('Failed to generate plan');
     }
 
-    const responseData = (await response.json()) as { url: string };
-    await recordGeneratedPlan(id, responseData.url, plan.scale);
-    return { url: responseData.url };
+    const responseData = (await response.json()) as { key: string };
+    await recordGeneratedPlan(id, responseData.key, plan.scale);
+    return { url: await objectStorage.signedUrl(responseData.key) };
 };
 
 // ---------------------------------------------------------------------------

@@ -333,7 +333,14 @@ export interface IPlan {
      * again -- minutes of work for a file that already existed.
      */
     generated?: {
-        url: string;
+        /**
+         * Object key, not a link.
+         *
+         * The archive is private, so there is no URL to keep: a link is signed
+         * for the plan's owner when they ask to download it, and expires. A
+         * stored URL would have been a lasting way in for anyone who saw it.
+         */
+        key: string;
         generated_at: Date;
         /** Scale it was actually drawn at, which is not always the one asked for. */
         scale?: number;

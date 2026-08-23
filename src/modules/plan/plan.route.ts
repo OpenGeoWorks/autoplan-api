@@ -21,6 +21,7 @@ import {
     editTopoSettingController,
     editLongitudinalProfileParametersController,
     generatePlanController,
+    downloadPlanController,
     convertComputationController,
     importComputationController,
     inspectCadUploadController,
@@ -77,6 +78,7 @@ planRouter.post('/coordinates/remap/:plan_id', remapCoordinatesController);
 planRouter.delete('/coordinates/uploaded/:plan_id', clearUploadedCoordinatesController);
 
 planRouter.get('/generate/:plan_id', generatePlanController);
+planRouter.get('/download/:plan_id', downloadPlanController);
 // Progress for a background generation (Task 12). Polled by the client after
 // /generate answers 202 with a job id.
 planRouter.get('/job/:job_id', planJobStatusController);
