@@ -249,11 +249,12 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
         },
         // Printed height of the plan title in millimetres. Governs the title
         // block only -- the drawing engine sizes the map annotation from
-        // label_size and the footer from footer_size. 5 mm is the engine's
-        // designed title height, so an unset plan is drawn as designed.
+        // label_size and the footer from footer_size. 3.5 mm is the engine's
+        // designed title height, matching the area and origin notes so the
+        // block reads at one size.
         font_size: {
             type: Number,
-            default: 5,
+            default: 3.5,
         },
         coordinates: {
             type: [coordinateSchema],

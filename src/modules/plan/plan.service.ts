@@ -143,7 +143,7 @@ export const createPlan = async (data: CreatePlanInput, options?: RepoOptions): 
         // now reads as a 12 mm title). Route sheets are fitted to the page
         // rather than plotted at a scale, so computePlanEmbellishments still
         // overwrites these for them once coordinates arrive.
-        font_size: 5,
+        font_size: 3.5,
         origin: PlanOrigin.UTM_ZONE_31,
         scale: 1000,
         beacon_type: BeaconType.BOX,
