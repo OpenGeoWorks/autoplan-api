@@ -22,6 +22,7 @@ import {
     editLongitudinalProfileParametersController,
     generatePlanController,
     downloadPlanController,
+    planScaleOptionsController,
     convertComputationController,
     importComputationController,
     inspectCadUploadController,
@@ -81,6 +82,7 @@ planRouter.delete('/coordinates/uploaded/:plan_id', clearUploadedCoordinatesCont
 
 planRouter.get('/generate/:plan_id', generatePlanController);
 planRouter.get('/download/:plan_id', downloadPlanController);
+planRouter.get('/scale-options/:plan_id', planScaleOptionsController);
 // Progress for a background generation (Task 12). Polled by the client after
 // /generate answers 202 with a job id.
 planRouter.get('/job/:job_id', planJobStatusController);

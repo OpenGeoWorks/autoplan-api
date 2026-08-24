@@ -330,6 +330,21 @@ export const downloadPlanController = catchAsync(async (req: Request, res: Respo
 });
 
 /**
+ * Scales this plan can be drawn at on its current sheet.
+ *
+ * The engine zooms out to the largest standard scale that fits when the one
+ * asked for is too tight, so without this the scale dropdown offers choices
+ * that will be silently overruled.
+ */
+export const planScaleOptionsController = catchAsync(async (req: Request, res: Response) => {
+    const result = await planService.getScaleOptions(
+        req.params.plan_id,
+        ownerOptions(req),
+    );
+    sendSuccess(res, result);
+});
+
+/**
  * Download every coordinate on a plan as CSV.
  *
  * Written straight to the response as it is read, so a survey of any size

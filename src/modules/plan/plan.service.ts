@@ -13,7 +13,7 @@ import planRepository from './plan.repository';
 import planPoints, { PREVIEW_LIMIT } from './plan-points.repository';
 import { CoordinateLimitError, CoordinateParseError, streamCoordinates } from './coordinate-stream';
 import { ColumnMapping } from './coordinate-parser';
-import { PointKind, stagingKindFor } from './plan.interface';
+import { PointKind, ScaleOptions, stagingKindFor } from './plan.interface';
 import planJobs, { PlanJob } from './plan-job';
 import objectStorage from '@utils/object-storage';
 import uploadSpool from '@utils/upload-spool';
@@ -1745,4 +1745,106 @@ export const importComputation = async (
     plan = requirePlan(await planRepository.editPlan(plan.id, edit));
 
     await applyComputationsToPlan(plan, computation, data.replace);
+};
+
+/**
+ * Which scales this plan can actually be drawn at, and which one to default to.
+ *
+ * The drawing engine falls back to the largest standard scale that fits when
+ * the one asked for is too tight, so a plan requested at 1:1000 can come back
+ * at 1:5000 with a note afterwards. That made the scale dropdown a list of
+ * guesses: most of it was unusable for any given survey and nothing said so.
+ *
+ * The answer comes from the engine rather than from here on purpose. It turns
+ * on the measured height of the wrapped title, the schedule band's own column
+ * widths and the annotation margin of the longest station id -- the engine's
+ * numbers, and a second implementation of them in this service would be a
+ * second set to keep in step with a drawing nobody here can see.
+ */
+export const getScaleOptions = async (
+    id: string,
+    options?: RepoOptions,
+): Promise<ScaleOptions> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, { filter: options?.filter }),
+    );
+
+    // The same shape the engine is sent when it draws this plan, so the
+    // answer is about the plan as it will actually be drawn.
+    const body: Record<string, unknown> = { ...plan };
+    const bounds = await surveyBounds(id, plan);
+    if (bounds) body.bounds = bounds;
+
+    const response = await fetch(`${env.PYTHON_SERVER}/${plan.type}/scale`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+        logger.error(`scale options failed (${response.status}): ${text}`);
+        let message = 'The drawing engine could not work out the scales for this plan';
+        try {
+            message = (JSON.parse(text) as { error?: string }).error ?? message;
+        } catch {
+            // Not JSON; the generic message is all there is to report.
+        }
+        throw ApiError.badRequest(message);
+    }
+
+    return JSON.parse(text) as ScaleOptions;
+};
+
+/**
+ * The ground the survey covers, when the document alone cannot say.
+ *
+ * An uploaded survey keeps only a preview on the document, so its extent has
+ * to come from the point store -- where the database computes it, rather than
+ * this process reading a million points to find four numbers. Returns
+ * undefined for a typed plan, whose coordinates are all present in the payload
+ * already: letting the engine measure what it was sent keeps this identical to
+ * what happens when the plan is generated.
+ */
+const surveyBounds = async (
+    id: string,
+    plan: IPlan,
+): Promise<Record<string, number> | undefined> => {
+    const summaries = await Promise.all(
+        (['coordinates', 'boundary'] as PointKind[]).map(kind =>
+            planPoints.summarise(id, kind),
+        ),
+    );
+
+    const stored = summaries.filter(s => s.count > 0);
+    if (!stored.length) return undefined;
+
+    // The engine measures the boundary along with the survey, so anything the
+    // document still carries in full has to count too -- on a topographic plan
+    // the boundary lives there and the spot heights are what was offloaded.
+    const onDocument: CoordinateProps[] = [
+        ...(plan.coordinates ?? []),
+        ...(plan.topographic_boundary?.coordinates ?? []),
+        ...(plan.layout_boundary?.coordinates ?? []),
+    ];
+
+    const eastings = [
+        ...stored.map(s => s.min_easting!),
+        ...stored.map(s => s.max_easting!),
+        ...onDocument.map(c => c.easting),
+    ].filter(Number.isFinite);
+    const northings = [
+        ...stored.map(s => s.min_northing!),
+        ...stored.map(s => s.max_northing!),
+        ...onDocument.map(c => c.northing),
+    ].filter(Number.isFinite);
+
+    if (!eastings.length || !northings.length) return undefined;
+
+    return {
+        min_easting: Math.min(...eastings),
+        max_easting: Math.max(...eastings),
+        min_northing: Math.min(...northings),
+        max_northing: Math.max(...northings),
+    };
 };

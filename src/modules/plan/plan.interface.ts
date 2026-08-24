@@ -400,6 +400,27 @@ export interface IPlanPointBucket {
     updated_at?: Date;
 }
 
+/**
+ * Scales a plan can be drawn at on its current sheet, from the drawing engine.
+ *
+ * `fits` is the subset of `scales` this survey holds on this paper: below the
+ * smallest of them the drawing runs off the sheet, and the engine would zoom
+ * out to `recommended` rather than draw what was asked for. `recommended` is
+ * null when nothing on the ladder is enough, which calls for a larger sheet
+ * rather than a smaller scale.
+ */
+export interface ScaleOptions {
+    /** Every standard scale the engine knows, in order. */
+    scales: number[];
+    fits: number[];
+    recommended: number | null;
+    /** Where the survey exactly touches the margins -- not a drawable scale. */
+    required: number | null;
+    page_size: string;
+    page_orientation: string;
+    ground: { width: number; height: number } | null;
+}
+
 /** Count and extent of a stored point series, computed in the database. */
 export interface PointSummary {
     count: number;
