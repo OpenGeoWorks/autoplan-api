@@ -148,7 +148,7 @@ export const createPlan = async (data: CreatePlanInput, options?: RepoOptions): 
         scale: 1000,
         beacon_type: BeaconType.BOX,
         beacon_size: 1.6,
-        label_size: 2.5,
+        label_size: 2,
         page_size: PageSize.A4,
         page_orientation: PageOrientation.PORTRAIT,
         title: 'Untitled Plan',

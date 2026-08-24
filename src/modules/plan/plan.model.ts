@@ -308,10 +308,12 @@ const PlanSchema: Schema<PlanDocument> = new Schema<PlanDocument>(
             default: 1.6,
         },
         // Printed height of the map annotation (beacon names, bearings and
-        // distances, quoted coordinates), in millimetres.
+        // distances, quoted coordinates), in millimetres. 2.0 is the floor of
+        // the surveyor's own range for bearings and distances; the annotation
+        // read heavy on a finished sheet at the top of it.
         label_size: {
             type: Number,
-            default: 2.5,
+            default: 2,
         },
         personel_name: {
             type: String,
