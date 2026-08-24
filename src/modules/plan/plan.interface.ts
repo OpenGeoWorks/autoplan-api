@@ -424,16 +424,14 @@ export interface ScaleOptions {
 /**
  * A font a plan can be drawn in, as the drawing engine reports it.
  *
- * `installed` is whether that engine has the family itself; `drawn_as` is what
- * the sheet really gets -- the family, or the metric-compatible stand-in used
- * in its place. Null when nothing can supply it, which is the one case where
- * picking it would not do what it says.
+ * Only families that engine has installed, so every one is drawn as itself.
+ * The list is therefore shorter on some machines than others -- it is the
+ * machine that differs, and a menu that quietly substituted was the bug.
  */
 export interface PlanFont {
     family: string;
+    /** What the face is for, shown beside it in the app. */
     note: string;
-    installed: boolean;
-    drawn_as: string | null;
 }
 
 export interface PlanFontOptions {
