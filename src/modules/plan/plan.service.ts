@@ -287,6 +287,10 @@ export const editCoordinates = async (
             filter: options?.filter,
             projection: {
                 type: 1,
+                // Gates the extent sizing below. Left out, the field reads as
+                // undefined and a plan with auto sizing off is treated as
+                // though it had it on.
+                auto_scale_sizes: 1,
                 point_source: 1,
                 topographic_boundary: 1,
                 topographic_setting: 1,
@@ -446,7 +450,11 @@ export const editTopoBoundary = async (
     const plan = requirePlan(
         await planRepository.getPlanById(id, {
             filter: options?.filter,
-            projection: { type: 1, coordinates: 1, topographic_setting: 1 },
+            // auto_scale_sizes gates the extent sizing below.
+            projection: {
+                type: 1, auto_scale_sizes: 1,
+                coordinates: 1, topographic_setting: 1,
+            },
         }),
     );
     requireType(plan, PlanType.TOPOGRAPHIC, 'topographic');
@@ -558,7 +566,8 @@ export const editLayoutBoundary = async (
     const plan = requirePlan(
         await planRepository.getPlanById(id, {
             filter: options?.filter,
-            projection: { type: 1, coordinates: 1 },
+            // auto_scale_sizes gates the extent sizing below.
+            projection: { type: 1, auto_scale_sizes: 1, coordinates: 1 },
         }),
     );
     requireType(plan, PlanType.LAYOUT, 'layout');
@@ -574,15 +583,22 @@ export const editLayoutBoundary = async (
         coords.push(coords[0]);
     }
 
-    const embellishments = computePlanEmbellishments([...coords, ...(plan.coordinates || [])]);
+    const update: Partial<IPlan> = { layout_boundary: boundary };
 
-    const update: Partial<IPlan> = {
-        layout_boundary: boundary,
-        font_size: embellishments.font_size,
-        beacon_size: embellishments.beacon_size,
-        label_size: embellishments.label_size,
-        footer_size: embellishments.footer_size,
-    };
+    // Through applySizes, which is what keeps these off a plan that does not
+    // want them. Written directly, as they were, editing a site boundary
+    // stamped extent-derived *ground metres* onto fields the drawing engine
+    // reads as printed millimetres: a 400 m site turned label_size 2 into 9.1
+    // and beacon_size 1.6 into 10, and the sheet came out covered in text.
+    // The topographic boundary editor has always gated this; this one did not.
+    if (usesExtentSizing(plan)) {
+        applySizes(plan, update, computePlanEmbellishments(
+            [...coords, ...(plan.coordinates || [])],
+            // Page size matters: the target is a printed size, so leaving it
+            // out sized every sheet as though it were A4.
+            plan.page_size,
+        ));
+    }
 
     return requirePlan(await planRepository.editPlan(id, update, options));
 };
