@@ -960,15 +960,7 @@ export const runPlanJob = async (jobId: string): Promise<void> => {
         });
 
         if (!response.ok) {
-            const body = await response.text().catch(() => '');
-            logger.error(`job ${jobId} failed at the engine (${response.status}): ${body}`);
-            let message = 'The drawing engine could not generate this plan';
-            try {
-                message = (JSON.parse(body) as { error?: string }).error ?? message;
-            } catch {
-                /* keep the generic message */
-            }
-            throw new Error(message);
+            throw new Error(await engineFailure(response, `job ${jobId}`));
         }
 
         const { key } = (await response.json()) as { key: string };
@@ -1103,6 +1095,44 @@ const buildEngineHeader = (
  * Plans without a stored point series keep the plain JSON body they always
  * used, so nothing about the small-plan path changes.
  */
+/**
+ * What to tell the user when the drawing engine refuses a plan.
+ *
+ * Its 4xx replies carry a reason written for a surveyor -- which sheet the
+ * survey will not fit on, that a layout's parameters produced no plots -- and
+ * this service has nothing better to say than that. Its 5xx replies do not:
+ * those are our faults, described in our own logs, and a stack trace is no
+ * use to someone trying to draw a plan.
+ *
+ * The full body is logged either way, so the generic case stays traceable
+ * from this side.
+ */
+const engineFailure = async (response: Response, subject: string): Promise<string> => {
+    const body = await response.text().catch(() => '');
+    logger.error(`${subject} failed at the engine (${response.status}): ${body}`);
+
+    let reported: string | undefined;
+    let stage: string | undefined;
+    try {
+        ({ error: reported, stage } = JSON.parse(body) as {
+            error?: string;
+            stage?: string;
+        });
+    } catch {
+        /* not JSON; there is nothing to pass on */
+    }
+
+    if (!reported || response.status >= 500) {
+        return 'The drawing engine could not generate this plan. Please try again, '
+            + 'and let us know if it keeps happening.';
+    }
+
+    // The stage tells the user which part of their input is at fault: the
+    // data it was built from, the sheet it was drawn on, or the storage
+    // behind it.
+    return stage ? `${reported} (while ${stage})` : reported;
+};
+
 const sendPlanToEngine = async (planId: string, plan: IPlan): Promise<Response> => {
     const url = `${env.PYTHON_SERVER}/${plan.type}/plan`;
 
@@ -1601,9 +1631,12 @@ export const generatePlan = async (
     const response = await sendPlanToEngine(id, plan);
 
     if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        logger.error(`Plan generation failed (${response.status}): ${body}`);
-        throw ApiError.badRequest('Failed to generate plan');
+        // The engine names the actual fault -- a survey too large for its
+        // sheet, a layout whose parameters produce no plots -- and this used
+        // to replace all of it with "Failed to generate plan". The user was
+        // then told nothing, for a problem that had been described exactly
+        // and that only they can fix.
+        throw ApiError.badRequest(await engineFailure(response, `plan ${id}`));
     }
 
     const responseData = (await response.json()) as { key: string };
