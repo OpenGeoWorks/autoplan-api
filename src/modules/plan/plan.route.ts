@@ -27,6 +27,7 @@ import {
     inspectCadUploadController,
     uploadCoordinatesController,
     previewCoordinatesController,
+    exportCoordinatesController,
     remapCoordinatesController,
     clearUploadedCoordinatesController,
     planJobStatusController,
@@ -73,6 +74,7 @@ planRouter.post(
 // an array in this process. No body parser is registered for it, which is what
 // leaves `req` readable as a stream.
 planRouter.post('/coordinates/upload/:plan_id', uploadCoordinatesController);
+planRouter.get('/coordinates/export/:plan_id', exportCoordinatesController);
 planRouter.post('/coordinates/preview', previewCoordinatesController);
 planRouter.post('/coordinates/remap/:plan_id', remapCoordinatesController);
 planRouter.delete('/coordinates/uploaded/:plan_id', clearUploadedCoordinatesController);

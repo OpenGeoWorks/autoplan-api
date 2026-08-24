@@ -329,6 +329,36 @@ export const downloadPlanController = catchAsync(async (req: Request, res: Respo
     sendSuccess(res, result);
 });
 
+/**
+ * Download every coordinate on a plan as CSV.
+ *
+ * Written straight to the response as it is read, so a survey of any size
+ * costs the same memory here as a small one. The table in the app shows only
+ * a preview and exporting that was exporting the preview.
+ */
+export const exportCoordinatesController = catchAsync(async (req: Request, res: Response) => {
+    const kind = req.query.kind === 'boundary' ? 'boundary' : 'coordinates';
+    const options = ownerOptions(req);
+
+    // Resolved before any output: once the first chunk is written the status
+    // and headers are sent, and a failure after that cannot be reported.
+    const fileName = await planService.coordinatesCsvName(req.params.plan_id, options);
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    for await (const chunk of planService.streamCoordinatesCsv(
+        req.params.plan_id, kind, options,
+    )) {
+        // Wait when the socket is full rather than buffering the whole survey
+        // in this process.
+        if (!res.write(chunk)) {
+            await new Promise(resolve => res.once('drain', resolve));
+        }
+    }
+    res.end();
+});
+
 export const uploadCoordinatesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as Record<string, string>;
 

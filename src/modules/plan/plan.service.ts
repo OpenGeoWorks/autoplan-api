@@ -1456,6 +1456,77 @@ const recordGeneratedPlan = async (
     }
 };
 
+/** One CSV field, quoted only when it has to be. */
+const csvField = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+/**
+ * The whole survey as CSV, a chunk at a time.
+ *
+ * A generator rather than a string: this is the export of every point, and a
+ * survey runs to millions of them. Built as one string it would be a hundred
+ * megabytes held in the API before a byte reached the client.
+ *
+ * Points live in the point store once a survey has been uploaded and in the
+ * plan document when they were typed, so both are read -- the store first,
+ * because when it holds anything it holds the whole series and the document
+ * only a preview of it.
+ */
+export async function* streamCoordinatesCsv(
+    id: string,
+    kind: PointKind = 'coordinates',
+    options?: RepoOptions,
+): AsyncGenerator<string> {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: {
+                name: 1, coordinates: 1,
+                topographic_boundary: 1, layout_boundary: 1,
+            },
+        }),
+    );
+
+    const row = (point: CoordinateProps): string =>
+        `${csvField(point.id)},${csvField(point.northing)},`
+        + `${csvField(point.easting)},${csvField(point.elevation ?? '')}\n`;
+
+    yield 'id,northing,easting,elevation\n';
+
+    if (await planPoints.countPoints(id, kind)) {
+        for await (const batch of planPoints.streamPoints(id, kind)) {
+            let chunk = '';
+            for (const point of batch) chunk += row(point);
+            yield chunk;
+        }
+        return;
+    }
+
+    // Typed coordinates: the document is the whole series, not a preview.
+    const embedded = kind === 'boundary'
+        ? (plan.topographic_boundary?.coordinates
+            ?? plan.layout_boundary?.coordinates ?? [])
+        : (plan.coordinates ?? []);
+    for (const point of embedded) yield row(point);
+}
+
+/** Filename for a plan's coordinate export. */
+export const coordinatesCsvName = async (
+    id: string,
+    options?: RepoOptions,
+): Promise<string> => {
+    const plan = requirePlan(
+        await planRepository.getPlanById(id, {
+            filter: options?.filter,
+            projection: { name: 1 },
+        }),
+    );
+    return `${(plan.name || 'coordinates').replace(/[^\w.-]+/g, '_')}.csv`;
+};
+
 /**
  * A link to this plan's last drawing, for whoever is entitled to it.
  *
