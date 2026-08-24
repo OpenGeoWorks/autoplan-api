@@ -13,7 +13,7 @@ import planRepository from './plan.repository';
 import planPoints, { PREVIEW_LIMIT } from './plan-points.repository';
 import { CoordinateLimitError, CoordinateParseError, streamCoordinates } from './coordinate-stream';
 import { ColumnMapping } from './coordinate-parser';
-import { PointKind, ScaleOptions, stagingKindFor } from './plan.interface';
+import { PlanFontOptions, PointKind, ScaleOptions, stagingKindFor } from './plan.interface';
 import planJobs, { PlanJob } from './plan-job';
 import objectStorage from '@utils/object-storage';
 import uploadSpool from '@utils/upload-spool';
@@ -1847,4 +1847,25 @@ const surveyBounds = async (
         min_northing: Math.min(...northings),
         max_northing: Math.max(...northings),
     };
+};
+
+/**
+ * The fonts a plan can be drawn in.
+ *
+ * Which fonts exist is a property of the drawing engine's machine, not of this
+ * service or of the browser, so it is asked rather than assumed. The app used
+ * to offer five families by name and the engine's image carried none of them,
+ * so every choice was drawn in the same fallback face and the font control did
+ * nothing.
+ */
+export const getFontOptions = async (): Promise<PlanFontOptions> => {
+    const response = await fetch(`${env.PYTHON_SERVER}/fonts`);
+    const text = await response.text();
+
+    if (!response.ok) {
+        logger.error(`font options failed (${response.status}): ${text}`);
+        throw ApiError.badRequest('The drawing engine could not list its fonts');
+    }
+
+    return JSON.parse(text) as PlanFontOptions;
 };

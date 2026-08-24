@@ -421,6 +421,26 @@ export interface ScaleOptions {
     ground: { width: number; height: number } | null;
 }
 
+/**
+ * A font a plan can be drawn in, as the drawing engine reports it.
+ *
+ * `installed` is whether that engine has the family itself; `drawn_as` is what
+ * the sheet really gets -- the family, or the metric-compatible stand-in used
+ * in its place. Null when nothing can supply it, which is the one case where
+ * picking it would not do what it says.
+ */
+export interface PlanFont {
+    family: string;
+    note: string;
+    installed: boolean;
+    drawn_as: string | null;
+}
+
+export interface PlanFontOptions {
+    default: string;
+    fonts: PlanFont[];
+}
+
 /** Count and extent of a stored point series, computed in the database. */
 export interface PointSummary {
     count: number;

@@ -345,6 +345,16 @@ export const planScaleOptionsController = catchAsync(async (req: Request, res: R
 });
 
 /**
+ * Fonts a plan can be drawn in, from the drawing engine.
+ *
+ * Not plan-specific -- it describes the engine -- so it needs no plan id and
+ * discloses nothing about anyone's data.
+ */
+export const planFontsController = catchAsync(async (_req: Request, res: Response) => {
+    sendSuccess(res, await planService.getFontOptions());
+});
+
+/**
  * Download every coordinate on a plan as CSV.
  *
  * Written straight to the response as it is read, so a survey of any size
