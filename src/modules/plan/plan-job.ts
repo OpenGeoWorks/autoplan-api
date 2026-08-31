@@ -62,6 +62,10 @@ export interface PlanJob {
     percent: number;
     url?: string;
     error?: string;
+    /** Scale the drawing engine actually used. */
+    scale?: number;
+    /** Requested scale when the engine had to zoom the plan out. */
+    scale_adjusted_from?: number;
     point_count?: number;
     /** Rows the parser could not read, on a finished upload. */
     skipped?: number;
@@ -86,6 +90,10 @@ const toJob = (raw: Record<string, string>): PlanJob | null => {
         percent: Number(raw.percent ?? 0),
         url: raw.url || undefined,
         error: raw.error || undefined,
+        scale: raw.scale ? Number(raw.scale) : undefined,
+        scale_adjusted_from: raw.scale_adjusted_from
+            ? Number(raw.scale_adjusted_from)
+            : undefined,
         point_count: raw.point_count ? Number(raw.point_count) : undefined,
         skipped: raw.skipped ? Number(raw.skipped) : undefined,
         payload: raw.payload ? JSON.parse(raw.payload) : undefined,
@@ -191,8 +199,14 @@ export const dequeue = async (id: string): Promise<void> => {
     await getRedis().lRem(QUEUE_KEY, 0, id);
 };
 
-export const completeJob = async (id: string, url: string): Promise<void> => {
-    await updateJob(id, { status: 'done', stage: 'complete', percent: 100, url });
+export const completeJob = async (
+    id: string,
+    url: string,
+    result: Pick<PlanJob, 'scale' | 'scale_adjusted_from'> = {},
+): Promise<void> => {
+    await updateJob(id, {
+        status: 'done', stage: 'complete', percent: 100, url, ...result,
+    });
 };
 
 /** Finish an upload job. No URL: the survey is in the point store, and the

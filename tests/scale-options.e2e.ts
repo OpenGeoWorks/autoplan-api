@@ -98,6 +98,33 @@ const main = async () => {
               withTables.recommended! >= menu.recommended!,
               `1:${withTables.recommended} vs 1:${menu.recommended}`);
 
+        console.log('\n== advice includes the values generation derives ==');
+        // Generation computes parcel area before drawing, and the resulting
+        // AREA line takes room in the title block. This borderline sheet was
+        // previously recommended at 1:1250 without that line, then generated
+        // at 1:2000 after the line appeared.
+        const borderline = [
+            { id: 'SBD 1201', northing: 0, easting: 0 },
+            { id: 'SBD 1202', northing: 0, easting: 134 },
+            { id: 'SBD 1203', northing: 98, easting: 134 },
+            { id: 'SBD 1204', northing: 98, easting: 0 },
+        ];
+        const prepared = await planService.getScaleOptions(await make({
+            coordinates: borderline,
+            scale: 1250,
+            font_size: 5,
+            label_size: 2.5,
+            footers: ['Checked by QA'],
+            footer_size: 2.5,
+            parcels: [{
+                name: 'Parcel 1',
+                ids: [...borderline.map(point => point.id), borderline[0].id],
+            }],
+        }), options);
+        check('a derived area line is included before scale advice',
+              prepared.recommended! > 1250 && !prepared.fits.includes(1250),
+              `recommended 1:${prepared.recommended}, required ${prepared.required}`);
+
         console.log('\n== an uploaded survey is measured in full ==');
         // The document keeps a preview; the extent has to come from the store,
         // or the menu is computed from 200 of a surveyor's 5,000 points.

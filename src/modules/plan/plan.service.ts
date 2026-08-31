@@ -963,11 +963,19 @@ export const runPlanJob = async (jobId: string): Promise<void> => {
             throw new Error(await engineFailure(response, `job ${jobId}`));
         }
 
-        const { key } = (await response.json()) as { key: string };
-        await recordGeneratedPlan(job.plan, key, plan.scale);
+        const generated = (await response.json()) as EngineGenerationResult;
+        const actualScale = generated.scale ?? plan.scale;
+        await recordGeneratedPlan(job.plan, generated.key, actualScale);
         // The job carries a link the client can use straight away; it expires,
         // and the download endpoint mints a fresh one after that.
-        await planJobs.completeJob(jobId, await objectStorage.signedUrl(key));
+        await planJobs.completeJob(
+            jobId,
+            await objectStorage.signedUrl(generated.key),
+            {
+                scale: actualScale,
+                scale_adjusted_from: generated.scale_adjusted_from ?? undefined,
+            },
+        );
         logger.info(`job ${jobId} complete`);
     } catch (error) {
         await planJobs.failJob(jobId, (error as Error).message);
@@ -1471,6 +1479,16 @@ export const shouldRunAsync = (plan: IPlan): boolean =>
 export interface GenerateResult {
     url?: string;
     job?: PlanJob;
+    /** Scale the drawing engine actually used. */
+    scale?: number;
+    /** Requested scale when the engine had to zoom the plan out. */
+    scale_adjusted_from?: number;
+}
+
+interface EngineGenerationResult {
+    key: string;
+    scale?: number | null;
+    scale_adjusted_from?: number | null;
 }
 
 /**
@@ -1639,9 +1657,14 @@ export const generatePlan = async (
         throw ApiError.badRequest(await engineFailure(response, `plan ${id}`));
     }
 
-    const responseData = (await response.json()) as { key: string };
-    await recordGeneratedPlan(id, responseData.key, plan.scale);
-    return { url: await objectStorage.signedUrl(responseData.key) };
+    const responseData = (await response.json()) as EngineGenerationResult;
+    const actualScale = responseData.scale ?? plan.scale;
+    await recordGeneratedPlan(id, responseData.key, actualScale);
+    return {
+        url: await objectStorage.signedUrl(responseData.key),
+        scale: actualScale,
+        scale_adjusted_from: responseData.scale_adjusted_from ?? undefined,
+    };
 };
 
 // ---------------------------------------------------------------------------
@@ -1801,6 +1824,12 @@ export const getScaleOptions = async (
     const plan = requirePlan(
         await planRepository.getPlanById(id, { filter: options?.filter }),
     );
+
+    // Generation derives parcel/boundary areas and legs before drawing. Those
+    // values change the title block and optional schedules, so advice measured
+    // before this preparation can claim 1:1250 fits and then generate at
+    // 1:2000. Ask about the same prepared plan the engine will actually draw.
+    await preparePlanForDrawing(id, plan);
 
     // The same shape the engine is sent when it draws this plan, so the
     // answer is about the plan as it will actually be drawn.
